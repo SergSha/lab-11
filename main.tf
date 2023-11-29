@@ -1,7 +1,7 @@
 locals {
   vm_user         = "cloud-user"
-  ssh_public_key  = "~/.ssh/id_rsa.pub"
-  ssh_private_key = "~/.ssh/id_rsa"
+  ssh_public_key  = "~/.ssh/otus.pub"
+  ssh_private_key = "~/.ssh/otus"
   #vm_name         = "instance"
   vpc_name        = "my_vpc_network"
 
@@ -31,11 +31,11 @@ locals {
 
   #subnet_cidrs  = ["10.10.50.0/24"]
   #subnet_name   = "my_vpc_subnet"
-  jump_count     = "0"
+  jump_count     = "1"
   db_count       = "0"
   iscsi_count    = "0"
   backend_count  = "0"
-  nginx_count    = "2"
+  nginx_count    = "0"
   /*
   disk = {
     "web" = {
@@ -111,7 +111,7 @@ resource "yandex_vpc_route_table" "rt" {
     #next_hop_address = data.yandex_lb_network_load_balancer.keepalived.internal_address_spec.0.address
   }
 }
-/*
+
 module "jump-servers" {
   source         = "./modules/instances"
   count          = local.jump_count
@@ -132,7 +132,7 @@ module "jump-servers" {
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
   secondary_disk = {}
-  depends_on     = [yandex_compute_disk.disks]
+  #depends_on     = [yandex_compute_disk.disks]
 }
 
 data "yandex_compute_instance" "jump-servers" {
@@ -141,7 +141,7 @@ data "yandex_compute_instance" "jump-servers" {
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.jump-servers]
 }
-
+/*
 module "db-servers" {
   source         = "./modules/instances"
   count          = local.db_count
@@ -273,7 +273,7 @@ data "yandex_compute_instance" "nginx-servers" {
 resource "local_file" "inventory_file" {
   content = templatefile("${path.module}/templates/inventory.tpl",
     {
-      #jump-servers    = data.yandex_compute_instance.jump-servers
+      jump-servers    = data.yandex_compute_instance.jump-servers
       #db-servers      = data.yandex_compute_instance.db-servers
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
       #backend-servers = data.yandex_compute_instance.backend-servers
@@ -287,7 +287,7 @@ resource "local_file" "inventory_file" {
 resource "local_file" "roster_file" {
   content = templatefile("${path.module}/templates/roster.tpl",
     {
-      #jump-servers    = data.yandex_compute_instance.jump-servers
+      jump-servers    = data.yandex_compute_instance.jump-servers
       #db-servers      = data.yandex_compute_instance.db-servers
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
       #backend-servers = data.yandex_compute_instance.backend-servers
@@ -353,35 +353,39 @@ resource "null_resource" "nginx-servers" {
   
 }
 */
-/*
-resource "null_resource" "backend-servers" {
 
-  count = length(module.backend-servers)
+resource "null_resource" "jump-servers" {
+
+  count = length(module.jump-servers)
 
   # Changes to the instance will cause the null_resource to be re-executed
   triggers = {
-    name = "${module.backend-servers[count.index].vm_name}"
+    name = "${module.jump-servers[count.index].vm_name}"
   }
 
   # Running the remote provisioner like this ensures that ssh is up and running
   # before running the local provisioner
 
   provisioner "remote-exec" {
-    inline = ["echo 'Wait until SSH is ready'"]
+    inline = ["sudo rpm --import https://repo.saltproject.io/salt/py3/redhat/8/x86_64/SALT-PROJECT-GPG-PUBKEY-2023.pub",
+    "curl -fsSL https://repo.saltproject.io/salt/py3/redhat/8/x86_64/latest.repo | sudo tee /etc/yum.repos.d/salt.repo",
+    "sudo dnf install salt-minion -y",
+    "sudo echo -e 'master:\n  - ${data.yandex_compute_instance.jump-servers[count.index].network_interface[0].ip_address}' > /etc/salt/minion"]
   }
-
+  
   connection {
     type        = "ssh"
     user        = local.vm_user
     private_key = file(local.ssh_private_key)
-    host        = "${module.backend-servers[count.index].instance_external_ip_address}"
+    host        = data.yandex_compute_instance.jump-servers[count.index].network_interface[0].ip_address
   }
-
+  /*
   # Note that the -i flag expects a comma separated list, so the trailing comma is essential!
 
   provisioner "local-exec" {
     command = "ansible-playbook -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${module.backend-servers[count.index].instance_external_ip_address},' provision.yml"
     #command = "ansible-playbook provision.yml -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${element(module.backend-servers.nat_ip_address, 0)},' "
   }
+  */
 }
-*/
+
