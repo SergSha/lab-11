@@ -131,7 +131,8 @@ module "jump-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\n${file("cloud-init.yml")}"
+  user-data = "#cloud-config\n${file("cloud-init-salt-master.yml")}"
+  # \nruncmd:\n- [ systemctl, start, salt-master ]
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
 }
@@ -260,7 +261,8 @@ module "nginx-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\n${file("cloud-init.yml")}\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}")}\n  encoding: b64\n  path: /etc/salt/minion\nruncmd:\n- systemctl start salt-minion"
+  user-data = "#cloud-config\n${file("cloud-init-salt-minion.yml")}\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}")}\n  encoding: b64\n  path: /etc/salt/minion\nbootcmd:\n- systemctl start salt-minion"
+  # \nruncmd:\n- [ systemctl, start, salt-minion ]
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
   depends_on     = [data.yandex_compute_instance.jump-servers]
