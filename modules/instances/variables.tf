@@ -149,5 +149,10 @@ variable "ssh_public_key" {
 variable "ssh_private_key" {
   type        = string
   description = "cloud-config ssh private key"
+  default     = ""
+}
+
+variable "user-data" {
+  type    = string
   default = ""
 }

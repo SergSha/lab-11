@@ -57,6 +57,8 @@ resource "yandex_compute_instance" "instances" {
   metadata = {
     ssh-keys  = "${var.vm_user}:${file(var.ssh_public_key)}"
     #user-data = "${file("cloud-init.yml")}"
+    #user-data = "${file("cloud-init.yml")}\nwrite_files:\n- path: /etc/salt/minion\n  encoding: b64\n  content: ${base64encode("master:\n- ${yandex_compute_instance.jump-servers[count.index].network_interface[0].ip_address}\n")}\n"
+    user-data = var.user-data
   }
 
   allow_stopping_for_update = var.allow_stopping_for_update
