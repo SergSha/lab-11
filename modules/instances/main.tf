@@ -56,36 +56,8 @@ resource "yandex_compute_instance" "instances" {
 
   metadata = {
     ssh-keys  = "${var.vm_user}:${file(var.ssh_public_key)}"
-    #user-data = "${file("cloud-init.yml")}"
-    #user-data = "${file("cloud-init.yml")}\nwrite_files:\n- path: /etc/salt/minion\n  encoding: b64\n  content: ${base64encode("master:\n- ${yandex_compute_instance.jump-servers[count.index].network_interface[0].ip_address}\n")}\n"
     user-data = var.user-data
   }
 
   allow_stopping_for_update = var.allow_stopping_for_update
-/*
-  provisioner "remote-exec" {
-    inline = ["echo 'Wait until SSH is ready'"]
-
-    connection {
-      host        = self.network_interface[0].nat_ip_address
-      type        = "ssh"
-      user        = local.user
-      private_key = file(local.ssh_private_key)
-    }
-  }
-
-  provisioner "local-exec" {
-    command = "ansible-playbook -u '${local.user}' --private-key '${local.ssh_private_key}' --become -i '${self.network_interface[0].nat_ip_address},' provision.yml"
-  }
-*/
 }
-/*
-resource "local_file" "inventory_file" {
-  content = templatefile("./templates/inventory.tpl",
-    {
-      instances = yandex_compute_instance.instances
-    }
-  )
-  filename = "./inventory.ini"
-}
-*/

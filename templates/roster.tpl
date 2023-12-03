@@ -2,7 +2,7 @@
 ${ jump-server["name"] }:
   host: ${ jump-server.network_interface[0].nat_ip_address }
   user: cloud-user
-  priv: /home/user/.ssh/id_rsa
+  priv: /home/user/.ssh/otus
   sudo: True
   
 %{ endfor ~}
@@ -10,7 +10,7 @@ ${ jump-server["name"] }:
 ${ nginx-server["name"] }:
   host: ${ nginx-server.network_interface[0].nat_ip_address }
   user: cloud-user
-  priv: /home/user/.ssh/id_rsa
+  priv: /home/user/.ssh/otus
   sudo: True
   
 %{ endfor ~}

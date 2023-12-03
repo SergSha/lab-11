@@ -116,6 +116,7 @@ module "jump-servers" {
   source         = "./modules/instances"
   count          = local.jump_count
   vm_name        = "jump-${format("%02d", count.index + 1)}"
+  core_fraction  = 50
   vpc_name       = local.vpc_name
   #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
@@ -246,6 +247,7 @@ module "nginx-servers" {
   source         = "./modules/instances"
   count          = local.nginx_count
   vm_name        = "nginx-${format("%02d", count.index + 1)}"
+  core_fraction  = 50
   vpc_name       = local.vpc_name
   #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
@@ -261,7 +263,11 @@ module "nginx-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\n${file("cloud-init-salt-minion.yml")}\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}")}\n  encoding: b64\n  path: /etc/salt/minion\nbootcmd:\n- systemctl start salt-minion"
+  #user-data = "#cloud-config\n${file("cloud-init-salt-minion.yml")}"
+  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: nginx-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+  #user-data = "#cloud-config\nruncmd:\n  - rpm --import https://repo.saltproject.io/salt/py3/redhat/8/x86_64/SALT-PROJECT-GPG-PUBKEY-2023.pub\n  - curl -fsSL https://repo.saltproject.io/salt/py3/redhat/8/x86_64/latest.repo | tee /etc/yum.repos.d/salt.repo\n  - dnf install salt-minion -y\nsalt_minion:\n  pkg_name: 'salt-minion'\n  service_name: 'salt-minion'\n  config_dir: '/etc/salt'\n  conf:\n    master: ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}"
+  #user-data = "#cloud-config\n${file("cloud-init-salt-minion.yml")}\n  - echo -e master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address} > /etc/salt/minion\n  - systemctl enable --now salt-minion"
+  # \nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}")}\n  encoding: b64\n  path: /etc/salt/minion\nbootcmd:\n- systemctl start salt-minion"
   # \nruncmd:\n- [ systemctl, start, salt-minion ]
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
@@ -274,7 +280,7 @@ data "yandex_compute_instance" "nginx-servers" {
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.nginx-servers]
 }
-/*
+
 resource "local_file" "inventory_file" {
   content = templatefile("${path.module}/templates/inventory.tpl",
     {
@@ -288,7 +294,7 @@ resource "local_file" "inventory_file" {
   )
   filename = "${path.module}/inventory.ini"
 }
-*/
+
 resource "local_file" "roster_file" {
   content = templatefile("${path.module}/templates/roster.tpl",
     {
@@ -300,7 +306,7 @@ resource "local_file" "roster_file" {
       remote_user     = local.vm_user
     }
   )
-  filename = "${path.module}/srv/salt/states/roster,${path.module}/inventory.ini"
+  filename = "${path.module}/salt/states/roster"
 }
 #resource "yandex_compute_disk" "disks" {
 #  for_each  = local.disks
