@@ -7,5 +7,5 @@ base:
   'backend-*':
     - backend
   'nginx-*':
-    - nginx-balancer
+    - balancer
     

@@ -20,7 +20,7 @@ nginx:
 
 /etc/nginx/nginx.conf:
   file.managed:
-    - source: salt://files/nginx_proxy_conf.jinja
+    - source: salt://files/nginx/nginx.conf.jinja
     - template: jinja
 
 
@@ -36,14 +36,14 @@ nginx:
 
 /etc/nginx/nginx.conf:
   file.managed:
-    - source: salt://nginx/files/etc/nginx/nginx.conf
+    - source: salt://nginx/files/nginx/nginx.conf
     - user: root
     - group: root
     - mode: 640
 
 /etc/nginx/conf.d/upstream.conf:
   file.managed:
-    - source: salt://nginx/files/etc/nginx/conf.d/upstream.conf
+    - source: salt://nginx/files/nginx/upstream.conf
     - user: root
     - group: root
     - mode: 640
