@@ -7,5 +7,5 @@ runcmd:
   - cp -rf /lab-11/srv/salt /srv/
   - cp -f /lab-11/etc/salt/master.d/file_roots.conf /etc/salt/master.d/
   - systemctl enable --now salt-master
-  - pause 60
+  - sleep 60
   - salt-key -a 'nginx-*' -y

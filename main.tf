@@ -306,7 +306,7 @@ resource "local_file" "roster_file" {
       remote_user     = local.vm_user
     }
   )
-  filename = "${path.module}/salt/states/roster"
+  filename = "${path.module}/srv/salt/roster"
 }
 #resource "yandex_compute_disk" "disks" {
 #  for_each  = local.disks
