@@ -132,6 +132,7 @@ module "jump-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
+#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: jump-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: jump-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
@@ -231,6 +232,7 @@ module "backend-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
+#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: backend-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: backend-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on = [yandex_compute_disk.disks]
@@ -265,6 +267,7 @@ module "nginx-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
+#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: nginx-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: nginx-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
