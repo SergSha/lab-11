@@ -11,6 +11,6 @@ upstream @backend {
   {%- endfor %}
   }
 
-  {% for host in salt['grains.items']('host') %}
-   echo {{ grains['host'] }}
+  {% for addr in salt['grains.item']('fqdn_ip4') %}
+   server {{ addr }}
 {% endfor %}

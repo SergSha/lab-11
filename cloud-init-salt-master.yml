@@ -9,4 +9,5 @@ runcmd:
   - systemctl enable --now salt-master salt-minion
   - sleep 60
   - salt-key -a 'jump-*' -y
+  - salt-key -a 'backend-*' -y
   - salt-key -a 'nginx-*' -y

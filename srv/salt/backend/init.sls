@@ -2,5 +2,5 @@
 include:
  #- backend.nftables
  - backend.nginx
- - backend.php-fpm
- - backend.wordpress
+ #- backend.php-fpm
+ #- backend.wordpress

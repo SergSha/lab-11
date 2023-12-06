@@ -34,7 +34,7 @@ locals {
   jump_count     = "1"
   db_count       = "0"
   iscsi_count    = "0"
-  backend_count  = "0"
+  backend_count  = "1"
   nginx_count    = "1"
   /*
   disk = {
@@ -132,9 +132,7 @@ module "jump-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  #user-data = "#cloud-config\n${file("cloud-init-salt-master.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: jump-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
-  # \nruncmd:\n- [ systemctl, start, salt-master ]
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
 }
@@ -213,7 +211,7 @@ data "yandex_compute_instance" "iscsi-servers" {
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.iscsi-servers]
 }
-
+*/
 module "backend-servers" {
   source         = "./modules/instances"
   count          = local.backend_count
@@ -224,7 +222,7 @@ module "backend-servers" {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
       subnet_id = subnet.id
-      #nat       = true
+      nat       = true
     }
     if subnet.name == "lab-subnet" #|| subnet.name == "backend-subnet"
   }
@@ -233,8 +231,11 @@ module "backend-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
+  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: backend-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
-  depends_on = [yandex_compute_disk.disks]
+  #depends_on = [yandex_compute_disk.disks]
+  depends_on = [data.yandex_compute_instance.jump-servers]
+
 }
 
 data "yandex_compute_instance" "backend-servers" {
@@ -243,7 +244,7 @@ data "yandex_compute_instance" "backend-servers" {
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.backend-servers]
 }
-*/
+
 module "nginx-servers" {
   source         = "./modules/instances"
   count          = local.nginx_count
@@ -264,12 +265,7 @@ module "nginx-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  #user-data = "#cloud-config\n${file("cloud-init-salt-minion.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: nginx-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
-  #user-data = "#cloud-config\nruncmd:\n  - rpm --import https://repo.saltproject.io/salt/py3/redhat/8/x86_64/SALT-PROJECT-GPG-PUBKEY-2023.pub\n  - curl -fsSL https://repo.saltproject.io/salt/py3/redhat/8/x86_64/latest.repo | tee /etc/yum.repos.d/salt.repo\n  - dnf install salt-minion -y\nsalt_minion:\n  pkg_name: 'salt-minion'\n  service_name: 'salt-minion'\n  config_dir: '/etc/salt'\n  conf:\n    master: ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}"
-  #user-data = "#cloud-config\n${file("cloud-init-salt-minion.yml")}\n  - echo -e master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address} > /etc/salt/minion\n  - systemctl enable --now salt-minion"
-  # \nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}")}\n  encoding: b64\n  path: /etc/salt/minion\nbootcmd:\n- systemctl start salt-minion"
-  # \nruncmd:\n- [ systemctl, start, salt-minion ]
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
   depends_on     = [data.yandex_compute_instance.jump-servers]
@@ -288,7 +284,7 @@ resource "local_file" "inventory_file" {
       jump-servers    = data.yandex_compute_instance.jump-servers
       #db-servers      = data.yandex_compute_instance.db-servers
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
-      #backend-servers = data.yandex_compute_instance.backend-servers
+      backend-servers = data.yandex_compute_instance.backend-servers
       nginx-servers   = data.yandex_compute_instance.nginx-servers
       remote_user     = local.vm_user
     }
@@ -302,7 +298,7 @@ resource "local_file" "roster_file" {
       jump-servers    = data.yandex_compute_instance.jump-servers
       #db-servers      = data.yandex_compute_instance.db-servers
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
-      #backend-servers = data.yandex_compute_instance.backend-servers
+      backend-servers = data.yandex_compute_instance.backend-servers
       nginx-servers   = data.yandex_compute_instance.nginx-servers
       remote_user     = local.vm_user
     }
