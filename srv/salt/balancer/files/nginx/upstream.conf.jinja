@@ -14,3 +14,81 @@ upstream @backend {
   {% for addr in salt['grains.item']('fqdn_ip4') %}
    server {{ addr }}
 {% endfor %}
+
+
+{% for server, addrs in salt['mine.get']('roles:web', 'network.ip_addrs', tgt_type='grain') | dictsort() %}
+server {{ server }} {{ addrs[0] }}:80 check
+{% endfor %}
+
+
+
+
+EXAMPLE
+One way to use data from Salt Mine is in a State. The values can be retrieved via Jinja and used in the SLS file. The following example is a partial HAProxy configuration file and pulls IP addresses from all Minions with the "web" grain to add them to the pool of load balanced servers.
+
+/srv/pillar/top.sls:
+```
+base:
+  'G@roles:web':
+    - web
+```
+
+/srv/pillar/web.sls:
+```
+mine_functions:
+  network.ip_addrs: [eth0]
+```
+
+Then trigger the minions to refresh their pillar data by running:
+```
+salt '*' saltutil.refresh_pillar
+```
+
+Verify that the results are showing up in the pillar on the minions by executing the following and checking for network.ip_addrs in the output:
+```
+salt '*' pillar.items
+```
+
+Which should show that the function is present on the minion, but not include the output:
+```
+minion1.example.com:
+    ----------
+    mine_functions:
+        ----------
+        network.ip_addrs:
+            - eth0
+```
+
+Mine data is typically only updated on the master every 60 minutes, this can be modified by setting:
+
+/etc/salt/minion.d/mine.conf:
+```
+mine_interval: 5
+```
+
+To force the mine data to update immediately run:
+```
+salt '*' mine.update
+```
+
+Setup the salt.states.file.managed state in /srv/salt/haproxy.sls:
+```
+haproxy_config:
+  file.managed:
+    - name: /etc/haproxy/config
+    - source: salt://haproxy_config
+    - template: jinja
+```
+
+Create the Jinja template in /srv/salt/haproxy_config:
+```
+<...file contents snipped...>
+
+{% for server, addrs in salt['mine.get']('roles:web', 'network.ip_addrs', tgt_type='grain') | dictsort() %}
+server {{ server }} {{ addrs[0] }}:80 check
+{% endfor %}
+
+<...file contents snipped...>
+```
+
+In the above example, server will be expanded to the minion_id.

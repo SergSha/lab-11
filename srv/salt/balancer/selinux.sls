@@ -90,3 +90,5 @@ selinux_fcontext_{{ file }}_absent:
       - pkg: selinux
     - unless: if (/usr/sbin/semanage fcontext --list | grep -q "^{{ file }} "); then /bin/false; else /bin/true; fi
 {% endfor %}
+
+{% endif %}

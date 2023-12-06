@@ -31,7 +31,7 @@ nginx:
     - watch:
       - pkg: nginx
       - file: /etc/nginx/nginx.conf
-      - file: /etc/nginx/conf.d/upstream.conf.jinja
+      - file: /etc/nginx/conf.d/upstream.conf
     - enable: true
 
 /etc/nginx/nginx.conf:

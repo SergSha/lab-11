@@ -5,7 +5,7 @@ runcmd:
   - dnf install git salt-master salt-minion -y
   - cd /root/ && git clone https://github.com/SergSha/lab-11.git
   - cp -rf /root/lab-11/srv/salt /srv/
-  - cp -f /root/lab-11/etc/salt/master.d/file_roots.conf /etc/salt/master.d/
+  - cp -f /root/lab-11/etc/salt/master.d/{file_roots,pillar}.conf /etc/salt/master.d/
   - systemctl enable --now salt-master salt-minion
   - sleep 60
   - salt-key -a 'jump-*' -y

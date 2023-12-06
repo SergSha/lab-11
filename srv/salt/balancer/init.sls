@@ -1,5 +1,5 @@
 ---
 include:
  #- balancer.nftables
- - balancer.selinux
+ #- balancer.selinux
  - balancer.nginx
