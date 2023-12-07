@@ -3,5 +3,5 @@ base:
     - selinux
     - mine
     - sql
-  'db-*'
+  'db-*':
     - percona  

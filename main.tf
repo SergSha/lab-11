@@ -32,7 +32,7 @@ locals {
   #subnet_cidrs  = ["10.10.50.0/24"]
   #subnet_name   = "my_vpc_subnet"
   jump_count     = "1"
-  db_count       = "0"
+  db_count       = "1"
   iscsi_count    = "0"
   backend_count  = "1"
   nginx_count    = "1"

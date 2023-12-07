@@ -3,7 +3,7 @@ base:
   '*':
     - chrony
   'db-*':
-    - percona
+    - db
   'backend-*':
     - backend
   'nginx-*':

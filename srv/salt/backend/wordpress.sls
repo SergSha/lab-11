@@ -10,6 +10,8 @@ download_wordpress:
   file.managed:
     - name: /tmp/wordpress.tar.gz
     - source: https://wordpress.org/latest.tar.gz
+    #- source_hash: 
+    - skip_verify: True
 
 extract_wordpress:
   archive.extracted:

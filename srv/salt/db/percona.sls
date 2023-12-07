@@ -1,4 +1,10 @@
 ---
+{% set mysql_root_user = salt['pillar.get']('mysql_root_user') %}
+{% set mysql_root_password = salt['pillar.get']('mysql_root_password') %}
+{% set wp_db_name = salt['pillar.get']('wp_db_name') %}
+{% set wp_db_user = salt['pillar.get']('wp_db_user') %}
+{% set wp_db_pass = salt['pillar.get']('wp_db_pass') %}
+
 percona-key:
   cmd.run:
     - name: rpm --import https://www.percona.com/downloads/RPM-GPG-KEY-percona
@@ -42,7 +48,7 @@ mysql:
 #  cmd.run:
 #    - name: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1 > /tmp/temp_root_pass
 
-{% temp_root_pass = salt['cmd.run']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
+{% set temp_root_pass = salt['cmd.run']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
 /root/.my.cnf:
   file.line:
     - name: /root/.my.cnf
@@ -63,24 +69,23 @@ set_root_pass:
 
 create_fnv1a_64_fnv_64_murmur_hash:
   cmd.run:
-    - name: |
-      /usr/bin/mysql -e "CREATE FUNCTION fnv1a_64 RETURNS INTEGER SONAME 'libfnv1a_udf.so'"
-      /usr/bin/mysql -e "CREATE FUNCTION fnv_64 RETURNS INTEGER SONAME 'libfnv_udf.so'"
-      /usr/bin/mysql -e "CREATE FUNCTION murmur_hash RETURNS INTEGER SONAME 'libmurmur_udf.so'"
+    - names:
+      - /usr/bin/mysql -e "CREATE FUNCTION fnv1a_64 RETURNS INTEGER SONAME 'libfnv1a_udf.so'"
+      - /usr/bin/mysql -e "CREATE FUNCTION fnv_64 RETURNS INTEGER SONAME 'libfnv_udf.so'"
+      - /usr/bin/mysql -e "CREATE FUNCTION murmur_hash RETURNS INTEGER SONAME 'libmurmur_udf.so'"
 
-
-mysql_database.present:
-    - character_set: {{ database_obj.get('character_set', '') }}
-    - collate: {{ database_obj.get('collate', '') }}
+mysql_database:
+  mysql_database.present:
+    - name: {{ wp_db_name }}
 
 mysql_user:
   mysql_user.present:
     - name: {{ wp_db_user }}
     - host: '10.10.0.0/255.255.0.0'
-    - password: '{{ wp_db_pass }}'
-    #- connection_host: '{{ mysql_host }}'
-    - connection_user: '{{ mysql_root_user }}'
-    - connection_pass: '{{ mysql_root_password }}'
+    - password: {{ wp_db_pass }}
+    #- connection_host: {{ mysql_host }}
+    - connection_user: {{ mysql_root_user }}
+    - connection_pass: {{ mysql_root_password }}
     - connection_charset: utf8
 
 

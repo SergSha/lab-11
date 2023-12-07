@@ -169,3 +169,84 @@ nginx-servers-info = {
 Значение IP адреса сайта можно получить от одного из балансировщиков, например, nginx-01:
 
 <img src="pics/screen-003.png" alt="screen-003.png" />
+
+
+
+
+
+```
+[root@jump-01 ~]# salt '*' saltutil.refresh_pillar
+jump-01:
+    True
+nginx-01:
+    True
+db-01:
+    True
+backend-01:
+    True
+[root@jump-01 ~]# salt '*' mine.update
+db-01:
+    True
+nginx-01:
+    True
+jump-01:
+    True
+backend-01:
+    True
+[root@jump-01 ~]# 
+```
+
+```
+[root@jump-01 ~]# salt '*' mine.get '*' network.ip_addrs
+db-01:
+    ----------
+    backend-01:
+        - 10.10.10.17
+    db-01:
+        - 10.10.10.36
+    jump-01:
+        - 10.10.10.21
+    nginx-01:
+        - 10.10.10.26
+jump-01:
+    ----------
+    backend-01:
+        - 10.10.10.17
+    db-01:
+        - 10.10.10.36
+    jump-01:
+        - 10.10.10.21
+    nginx-01:
+        - 10.10.10.26
+nginx-01:
+    ----------
+    backend-01:
+        - 10.10.10.17
+    db-01:
+        - 10.10.10.36
+    jump-01:
+        - 10.10.10.21
+    nginx-01:
+        - 10.10.10.26
+backend-01:
+    ----------
+    backend-01:
+        - 10.10.10.17
+    db-01:
+        - 10.10.10.36
+    jump-01:
+        - 10.10.10.21
+    nginx-01:
+        - 10.10.10.26
+[root@jump-01 ~]# 
+```
+
+```
+[root@jump-01 ~]# salt '*' state.apply
+```
+
+
+
+
+
+

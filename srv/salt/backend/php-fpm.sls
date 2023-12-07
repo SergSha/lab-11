@@ -5,13 +5,13 @@ php-packages:
       - php-fpm
       - php-mysqlnd
       - php-bcmath
-      - php-ctype
+      #- php-ctype
       - php-json
       - php-mbstring
       - php-pdo
-      - php-tokenizer
+      #- php-tokenizer
       - php-xml
-      - php-curl
+      #- php-curl
 
 php-fpm:
   service.running:
