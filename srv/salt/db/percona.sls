@@ -69,25 +69,39 @@ create_fnv1a_64_fnv_64_murmur_hash:
       /usr/bin/mysql -e "CREATE FUNCTION murmur_hash RETURNS INTEGER SONAME 'libmurmur_udf.so'"
 
 
+mysql_database.present:
+    - character_set: {{ database_obj.get('character_set', '') }}
+    - collate: {{ database_obj.get('collate', '') }}
+
+mysql_user:
+  mysql_user.present:
+    - name: {{ wp_db_user }}
+    - host: '10.10.0.0/255.255.0.0'
+    - password: '{{ wp_db_pass }}'
+    #- connection_host: '{{ mysql_host }}'
+    - connection_user: '{{ mysql_root_user }}'
+    - connection_pass: '{{ mysql_root_password }}'
+    - connection_charset: utf8
 
 
 
-- name: DB | Create Database for Wordpress
-  community.mysql.mysql_db:
-    name: "{{ wp_db_name }}"
-    login_user: "{{ mysql_root_user }}"
-    login_password: "{{ mysql_root_password }}"
-    #login_unix_socket: /run/mysqld/mysqld.sock
 
-- name: DB | Create database user using hashed password with all database privileges
-  community.mysql.mysql_user:
-    name: "{{ wp_db_user }}"
-    host: "10.10.0.0/255.255.0.0"
-    password: "{{ wp_db_pass }}"
-    priv: "{{ wp_db_name }}.*:ALL"
-    state: present
-    login_user: "{{ mysql_root_user }}"
-    login_password: "{{ mysql_root_password }}"
-    #login_unix_socket: /run/mysqld/mysqld.sock
+#- name: DB | Create Database for Wordpress
+#  community.mysql.mysql_db:
+#    name: "{{ wp_db_name }}"
+#    login_user: "{{ mysql_root_user }}"
+#    login_password: "{{ mysql_root_password }}"
+#    #login_unix_socket: /run/mysqld/mysqld.sock
+#
+#- name: DB | Create database user using hashed password with all database privileges
+#  community.mysql.mysql_user:
+#    name: "{{ wp_db_user }}"
+#    host: "10.10.0.0/255.255.0.0"
+#    password: "{{ wp_db_pass }}"
+#    priv: "{{ wp_db_name }}.*:ALL"
+#    state: present
+#    login_user: "{{ mysql_root_user }}"
+#    login_password: "{{ mysql_root_password }}"
+#    #login_unix_socket: /run/mysqld/mysqld.sock
 
 
