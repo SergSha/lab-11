@@ -1,4 +1,7 @@
 base:
-   '*':
-     - selinux
-     - mine
+  '*':
+    - selinux
+    - mine
+    - sql
+  'db-*'
+    - percona  
