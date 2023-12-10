@@ -19,7 +19,7 @@ setup_ps80:
     - name: echo 'y' | percona-release setup ps80
 
 install_packages:
-  pkgs.installee:
+  pkgs.installed:
     pkgs:
       - percona-server-server
       - python3-PyMySQL
@@ -29,9 +29,7 @@ mysql:
     - watch:
         - file: 
           - /etc/my.cnf.d/my.cnf
-          - /root/.my.cnf
-        - pkg:
-          - mysql
+          #- /root/.my.cnf
     - enable: true
 
 /etc/my.cnf.d/my.cnf:
@@ -39,22 +37,34 @@ mysql:
     - source: salt://db/files/percona/my.cnf.jinja
     - template: jinja
 
-/root/.my.cnf:
-  file.managed:
-    - source: salt://db/files/percona/root-my.cnf.jinja
-    - template: jinja
+#/root/.my.cnf:
+#  file.managed:
+#    - source: salt://db/files/percona/root-my.cnf.jinja
+#    - template: jinja
 
 #get_temp_root_pass:
 #  cmd.run:
 #    - name: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1 > /tmp/temp_root_pass
 
 {% set temp_root_pass = salt['cmd.run']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
+
+#{% set temp_root_pass = salt['file.grep']('/var/log/mysqld.log', 'temporary password',) %}
+
+#/root/.my.cnf:
+#  file.line:
+#    - name: /root/.my.cnf
+#    - mode: replace
+#    - match: password=.*
+#    - content: password={{ temp_root_pass }}
+
 /root/.my.cnf:
-  file.line:
-    - name: /root/.my.cnf
-    - mode: replace
-    - match: password=.*
-    - content: password={{ temp_root_pass }}
+  file.append:
+    - template: jinja
+    - text: |
+        [client]
+        user={{ mysql_root_user }}
+        password={{ temp_root_pass }}
+
 
 set_root_pass:
   cmd.run:
