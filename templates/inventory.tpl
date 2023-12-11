@@ -15,6 +15,11 @@ ${ nginx-server["name"] } ansible_host=${ nginx-server.network_interface[0].ip_a
 ${ jump-server["name"] }
 %{ endfor ~}
 
+[db_servers]
+%{ for db-server in db-servers ~}
+${ db-server["name"] }
+%{ endfor ~}
+
 [backend_servers]
 %{ for backend-server in backend-servers ~}
 ${ backend-server["name"] }

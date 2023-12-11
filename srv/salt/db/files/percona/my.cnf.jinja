@@ -20,7 +20,7 @@
 # escpecially if they contain "#" chars...
 # Remember to edit /etc/mysql/debian.cnf when changing the socket location.
 [client]
-port		= {{ mysql_port }}
+port		= {{ pillar['mysql_port'] }}
 socket		= /var/run/mysqld/mysqld.sock
 
 # Here is entries for some specific programs
@@ -38,7 +38,7 @@ nice		= 0
 user		= mysql
 pid-file	= /var/run/mysqld/mysqld.pid
 socket		= /var/run/mysqld/mysqld.sock
-port		= {{ mysql_port }}
+port		= {{ pillar['mysql_port'] }}
 basedir		= /usr
 datadir		= /var/lib/mysql
 tmpdir		= /tmp
@@ -47,14 +47,14 @@ skip-external-locking
 #
 # Instead of skip-networking the default is now to listen only on
 # localhost which is more compatible and is not less secure.
-bind-address		= {{  bind_address }}
+bind-address		= {{ pillar['bind_address'] }}
 #
 # * Fine Tuning
 #
-key_buffer_size		= {{ key_buffer }} # 16M
-max_allowed_packet	= {{ max_allowed_packet }} # 16M
-thread_stack		= {{ thread_stack }} # 192K
-thread_cache_size       = {{ thread_cache_size }} # 8
+key_buffer_size		= {{ pillar['key_buffer'] }} # 16M
+max_allowed_packet	= {{ pillar['max_allowed_packet'] }} # 16M
+thread_stack		= {{ pillar['thread_stack'] }} # 192K
+thread_cache_size       = {{ pillar['thread_cache_size'] }} # 8
 # This replaces the startup script and checks MyISAM tables if needed
 # the first time they are touched
 #myisam-recover         = BACKUP
@@ -78,12 +78,12 @@ thread_cache_size       = {{ thread_cache_size }} # 8
 # Error logging goes to syslog due to /etc/mysql/conf.d/mysqld_safe_syslog.cnf.
 #
 # Here you can see queries with especially long duration
-{% if sqldebug %}
-#{{ log_slow_queries }}
-{{ slow_query_log }}
-{{ log_output }}
-{{ long_query_time }}
-#{{ log_queries_not_using_indexes }}
+{% if pillar['sqldebug'] %}
+#{{ pillar['log_slow_queries'] }}
+{{ pillar['slow_query_log'] }}
+{{ pillar['log_output'] }}
+{{ pillar['long_query_time'] }}
+#{{ pillar['log_queries_not_using_indexes'] }}
 {% endif -%}
 #
 # The following can be used as easy to replay backup logs or for replication.

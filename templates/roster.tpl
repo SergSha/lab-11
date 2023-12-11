@@ -6,6 +6,14 @@ ${ jump-server["name"] }:
   sudo: True  
 %{ endfor ~}
 
+%{ for db-server in db-servers ~}
+${ db-server["name"] }:
+  host: ${ db-server.network_interface[0].nat_ip_address }
+  user: cloud-user
+  priv: /home/user/.ssh/otus
+  sudo: True  
+%{ endfor ~}
+
 %{ for backend-server in backend-servers ~}
 ${ backend-server["name"] }:
   host: ${ backend-server.network_interface[0].nat_ip_address }

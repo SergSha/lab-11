@@ -1,9 +1,9 @@
 ---
-{% set mysql_root_user = salt['pillar.get']('mysql_root_user') %}
-{% set mysql_root_password = salt['pillar.get']('mysql_root_password') %}
-{% set wp_db_name = salt['pillar.get']('wp_db_name') %}
-{% set wp_db_user = salt['pillar.get']('wp_db_user') %}
-{% set wp_db_pass = salt['pillar.get']('wp_db_pass') %}
+{% set mysql_root_user = pillar['mysql_root_user'] %}
+{% set mysql_root_password = pillar['mysql_root_password'] %}
+{% set wp_db_name = pillar['wp_db_name'] %}
+{% set wp_db_user = pillar['wp_db_user'] %}
+{% set wp_db_pass = pillar['wp_db_pass'] %}
 
 percona-key:
   cmd.run:
@@ -17,19 +17,26 @@ percona-release:
 setup_ps80:
   cmd.run:
     - name: echo 'y' | percona-release setup ps80
+    - require:
+      - pkg: percona-release
 
-install_packages:
-  pkgs.installed:
-    pkgs:
-      - percona-server-server
-      - python3-PyMySQL
+#install_packages:
+#  pkg.installed:
+#    pkgs:
+#      - percona-server-server
+#      - python3-PyMySQL
+
+percona-server-server:
+  pkg.installed
+
+python3-PyMySQL:
+  pkg.installed
 
 mysql:
   service.running:
     - watch:
-        - file: 
-          - /etc/my.cnf.d/my.cnf
-          #- /root/.my.cnf
+      - file: '/etc/my.cnf.d/my.cnf'
+      #- /root/.my.cnf
     - enable: true
 
 /etc/my.cnf.d/my.cnf:
@@ -37,34 +44,16 @@ mysql:
     - source: salt://db/files/percona/my.cnf.jinja
     - template: jinja
 
-#/root/.my.cnf:
-#  file.managed:
-#    - source: salt://db/files/percona/root-my.cnf.jinja
-#    - template: jinja
-
-#get_temp_root_pass:
-#  cmd.run:
-#    - name: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1 > /tmp/temp_root_pass
-
 {% set temp_root_pass = salt['cmd.run']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
 
-#{% set temp_root_pass = salt['file.grep']('/var/log/mysqld.log', 'temporary password',) %}
-
-#/root/.my.cnf:
-#  file.line:
-#    - name: /root/.my.cnf
-#    - mode: replace
-#    - match: password=.*
-#    - content: password={{ temp_root_pass }}
-
-/root/.my.cnf:
+create_my_cnf:
   file.append:
+    - name: /root/.my.cnf
     - template: jinja
     - text: |
         [client]
         user={{ mysql_root_user }}
         password={{ temp_root_pass }}
-
 
 set_root_pass:
   cmd.run:
@@ -84,39 +73,24 @@ create_fnv1a_64_fnv_64_murmur_hash:
       - /usr/bin/mysql -e "CREATE FUNCTION fnv_64 RETURNS INTEGER SONAME 'libfnv_udf.so'"
       - /usr/bin/mysql -e "CREATE FUNCTION murmur_hash RETURNS INTEGER SONAME 'libmurmur_udf.so'"
 
-mysql_database:
+create_mysql_database:
   mysql_database.present:
     - name: {{ wp_db_name }}
+    - connection_user: {{ mysql_root_user }}
+    - connection_pass: {{ mysql_root_password }}
+    - require:
+      - service: mysql
 
-mysql_user:
+
+create_mysql_user:
   mysql_user.present:
     - name: {{ wp_db_user }}
     - host: '10.10.0.0/255.255.0.0'
     - password: {{ wp_db_pass }}
-    #- connection_host: {{ mysql_host }}
+    #- connection_host: ## mysql_host ##
     - connection_user: {{ mysql_root_user }}
     - connection_pass: {{ mysql_root_password }}
     - connection_charset: utf8
-
-
-
-
-#- name: DB | Create Database for Wordpress
-#  community.mysql.mysql_db:
-#    name: "{{ wp_db_name }}"
-#    login_user: "{{ mysql_root_user }}"
-#    login_password: "{{ mysql_root_password }}"
-#    #login_unix_socket: /run/mysqld/mysqld.sock
-#
-#- name: DB | Create database user using hashed password with all database privileges
-#  community.mysql.mysql_user:
-#    name: "{{ wp_db_user }}"
-#    host: "10.10.0.0/255.255.0.0"
-#    password: "{{ wp_db_pass }}"
-#    priv: "{{ wp_db_name }}.*:ALL"
-#    state: present
-#    login_user: "{{ mysql_root_user }}"
-#    login_password: "{{ mysql_root_password }}"
-#    #login_unix_socket: /run/mysqld/mysqld.sock
+...
 
 

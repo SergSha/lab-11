@@ -49,3 +49,4 @@ nginx:
     - user: root
     - group: root
     - mode: 640
+...

@@ -27,3 +27,4 @@ configure_wordpress:
     - template: jinja
     - user: nginx
     - group: nginx
+...

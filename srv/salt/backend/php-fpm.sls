@@ -16,3 +16,6 @@ php-packages:
 php-fpm:
   service.running:
     - enable: true
+    - require:
+      - pkg: php-fpm
+...

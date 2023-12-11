@@ -34,8 +34,8 @@ locals {
   jump_count     = "1"
   db_count       = "1"
   iscsi_count    = "0"
-  backend_count  = "1"
-  nginx_count    = "1"
+  backend_count  = "0"
+  nginx_count    = "0"
   /*
   disk = {
     "web" = {
@@ -287,7 +287,7 @@ resource "local_file" "inventory_file" {
   content = templatefile("${path.module}/templates/inventory.tpl",
     {
       jump-servers    = data.yandex_compute_instance.jump-servers
-      #db-servers      = data.yandex_compute_instance.db-servers
+      db-servers      = data.yandex_compute_instance.db-servers
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
       backend-servers = data.yandex_compute_instance.backend-servers
       nginx-servers   = data.yandex_compute_instance.nginx-servers
@@ -301,7 +301,7 @@ resource "local_file" "roster_file" {
   content = templatefile("${path.module}/templates/roster.tpl",
     {
       jump-servers    = data.yandex_compute_instance.jump-servers
-      #db-servers      = data.yandex_compute_instance.db-servers
+      db-servers      = data.yandex_compute_instance.db-servers
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
       backend-servers = data.yandex_compute_instance.backend-servers
       nginx-servers   = data.yandex_compute_instance.nginx-servers

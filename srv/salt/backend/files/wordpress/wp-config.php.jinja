@@ -1,8 +1,8 @@
 {%- set addrs = salt['mine.get']('db-*', 'network.ip_addrs', tgt_type='glob') %}
 {%- set wp_db_host = addrs['db-01'][0] %}
-{%- set wp_db_name = salt['pillar.get']('wp_db_name') %}
-{%- set wp_db_user = salt['pillar.get']('wp_db_user') %}
-{%- set wp_db_pass = salt['pillar.get']('wp_db_pass') -%}
+{%- set wp_db_name = spillar['wp_db_name'] %}
+{%- set wp_db_user = pillar['wp_db_user'] %}
+{%- set wp_db_pass = pillar['wp_db_pass'] -%}
 <?php
 /**
  * The base configuration for WordPress
