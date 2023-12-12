@@ -83,6 +83,7 @@ variable "allow_stopping_for_update" {
 }
 
 # yc compute image list --folder-id standard-images
+# yc compute image list --folder-id standard-images | grep almalinux-9-v2023 | less
 
 #variable "image_id" {
 #  description = "Default image ID Ubuntu 20"
@@ -102,9 +103,15 @@ variable "allow_stopping_for_update" {
 #  type        = string
 #}
 
+#variable "image_id" {
+#  description = "Default image ID AlmaLinux 8"
+#  default     = "fd84itfojin92kj38vmb" # almalinux-8-v20230925
+#  type        = string
+#}
+
 variable "image_id" {
-  description = "Default image ID AlmaLinux 8"
-  default     = "fd84itfojin92kj38vmb" # almalinux-8-v20230925
+  description = "Default image ID AlmaLinux 9"
+  default     = "fd81v7g3b2g481h03tsp" # almalinux-9-v20231127
   type        = string
 }
 
