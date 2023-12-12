@@ -44,7 +44,7 @@ mysql:
     - source: salt://db/files/percona/my.cnf.jinja
     - template: jinja
 
-{% set temp_root_pass = salt['cmd.run']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
+{% set temp_root_pass = salt['cmd.shell']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
 
 create_my_cnf:
   file.append:
