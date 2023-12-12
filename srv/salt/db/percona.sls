@@ -37,6 +37,8 @@ mysql:
     - watch:
       - file: '/etc/my.cnf.d/my.cnf'
     - enable: true
+    - require:
+      - pkg: percona-server-server
 
 /etc/my.cnf.d/my.cnf:
   file.managed:
@@ -46,17 +48,19 @@ mysql:
 {% set temp_root_pass = salt['cmd.shell']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
 
 create_my_cnf:
-  file.append:
+  file.write:
     - name: /root/.my.cnf
     - template: jinja
     - text: |
         [client]
         user={{ mysql_root_user }}
-        password={{ temp_root_pass }}
+        password={{ temp_root_pass.stdout }}
+    - require:
+      - service: mysql
 
 #set_root_pass:
 #  cmd.run:
-#    - name: mysql --connect-expired-password -e "ALTER USER '{{ mysql_root_user }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
+#    - name: mysql --connect-expired-password -e "ALTER USER '{{ mysql_root_user.stdout }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
 
 change_root_pass:
   mysql_user.present:
