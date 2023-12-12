@@ -1,5 +1,5 @@
 locals {
-  vm_user         = "cloud-user"
+  vm_user         = "almalinux"
   ssh_public_key  = "~/.ssh/otus.pub"
   ssh_private_key = "~/.ssh/otus"
   #vm_name         = "instance"
