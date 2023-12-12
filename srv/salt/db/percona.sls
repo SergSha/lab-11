@@ -36,7 +36,6 @@ mysql:
   service.running:
     - watch:
       - file: '/etc/my.cnf.d/my.cnf'
-      #- /root/.my.cnf
     - enable: true
 
 /etc/my.cnf.d/my.cnf:
@@ -55,9 +54,18 @@ create_my_cnf:
         user={{ mysql_root_user }}
         password={{ temp_root_pass }}
 
-set_root_pass:
-  cmd.run:
-    - name: mysql --connect-expired-password -e "ALTER USER '{{ mysql_root_user }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
+#set_root_pass:
+#  cmd.run:
+#    - name: mysql --connect-expired-password -e "ALTER USER '{{ mysql_root_user }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
+
+change_root_pass:
+  mysql_user.present:
+    - name: {{ mysql_root_user }}
+    - host: '10.10.0.0/255.255.0.0'
+    - password: {{ mysql_root_password }}
+    - connection_host: localhost
+    - connection_user: {{ mysql_root_user }}
+    - connection_pass: {{ temp_root_pass }}
 
 /root/.my.cnf:
   file.line:
