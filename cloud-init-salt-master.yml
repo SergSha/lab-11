@@ -8,7 +8,7 @@ runcmd:
   - cp -f /root/lab-11/etc/salt/master.d/{file_roots,pillar}.conf /etc/salt/master.d/
   - systemctl enable --now salt-master salt-minion
   - sleep 90
-  - salt-key -a 'jump-*' -y
+  - salt-key -a 'master-*' -y
   - salt-key -a 'db-*' -y
   - salt-key -a 'backend-*' -y
   - salt-key -a 'nginx-*' -y

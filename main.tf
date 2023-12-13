@@ -7,9 +7,8 @@ locals {
 
   folders = {
     "lab-folder" = {}
-    #"loadbalancer-folder" = {}
-    #"nginx_folder" = {}
-    #"backend_folder" = {}
+    #"lb_folder" = {}
+    #"be_folder" = {}
   }
 
   subnets = {
@@ -17,13 +16,10 @@ locals {
       v4_cidr_blocks = ["10.10.10.0/24"]
     }
     /*
-    "loadbalancer-subnet" = {
-      v4_cidr_blocks = ["10.10.10.0/24"]
-    }
-    "nginx-subnet" = {
+    "lb-subnet" = {
       v4_cidr_blocks = ["10.10.20.0/24"]
     }
-    "backend-subnet" = {
+    "be-subnet" = {
       v4_cidr_blocks = ["10.10.30.0/24"]
     }
     */
@@ -31,11 +27,11 @@ locals {
 
   #subnet_cidrs  = ["10.10.50.0/24"]
   #subnet_name   = "my_vpc_subnet"
-  jump_count     = "1"
+  master_count     = "1"
   db_count       = "1"
   iscsi_count    = "0"
-  backend_count  = "0"
-  nginx_count    = "0"
+  be_count  = "0"
+  lb_count    = "0"
   /*
   disk = {
     "web" = {
@@ -112,10 +108,10 @@ resource "yandex_vpc_route_table" "rt" {
   }
 }
 
-module "jump-servers" {
+module "masters" {
   source         = "./modules/instances"
-  count          = local.jump_count
-  vm_name        = "jump-${format("%02d", count.index + 1)}"
+  count          = local.master_count
+  vm_name        = "master-${format("%02d", count.index + 1)}"
   core_fraction  = 50
   vpc_name       = local.vpc_name
   #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
@@ -132,20 +128,20 @@ module "jump-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: jump-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: jump-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
+#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: master-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
+  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: master-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
 }
 
-data "yandex_compute_instance" "jump-servers" {
-  count      = length(module.jump-servers)
-  name       = module.jump-servers[count.index].vm_name
+data "yandex_compute_instance" "masters" {
+  count      = length(module.masters)
+  name       = module.masters[count.index].vm_name
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
-  depends_on = [module.jump-servers]
+  depends_on = [module.masters]
 }
 
-module "db-servers" {
+module "dbs" {
   source         = "./modules/instances"
   count          = local.db_count
   vm_name        = "db-${format("%02d", count.index + 1)}"
@@ -164,17 +160,17 @@ module "db-servers" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: db-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: db-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
-  depends_on = [data.yandex_compute_instance.jump-servers]
+  depends_on = [data.yandex_compute_instance.masters]
 }
 
-data "yandex_compute_instance" "db-servers" {
-  count      = length(module.db-servers)
-  name       = module.db-servers[count.index].vm_name
+data "yandex_compute_instance" "dbs" {
+  count      = length(module.dbs)
+  name       = module.dbs[count.index].vm_name
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
-  depends_on = [module.db-servers]
+  depends_on = [module.dbs]
 }
 /*
 module "iscsi-servers" {
@@ -189,7 +185,7 @@ module "iscsi-servers" {
       subnet_id = subnet.id
       #nat       = true
     }
-    if subnet.name == "lab-subnet" #|| subnet.name == "backend-subnet"
+    if subnet.name == "lab-subnet" #|| subnet.name == "be-subnet"
   }
   #subnet_cidrs   = yandex_vpc_subnet.subnet.v4_cidr_blocks
   #subnet_name    = yandex_vpc_subnet.subnet.name
@@ -215,10 +211,10 @@ data "yandex_compute_instance" "iscsi-servers" {
   depends_on = [module.iscsi-servers]
 }
 */
-module "backend-servers" {
+module "bes" {
   source         = "./modules/instances"
-  count          = local.backend_count
-  vm_name        = "backend-${format("%02d", count.index + 1)}"
+  count          = local.be_count
+  vm_name        = "be-${format("%02d", count.index + 1)}"
   vpc_name       = local.vpc_name
   #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
@@ -227,32 +223,32 @@ module "backend-servers" {
       subnet_id = subnet.id
       nat       = true
     }
-    if subnet.name == "lab-subnet" #|| subnet.name == "backend-subnet"
+    if subnet.name == "lab-subnet" #|| subnet.name == "be-subnet"
   }
   #subnet_cidrs   = yandex_vpc_subnet.subnet.v4_cidr_blocks
   #subnet_name    = yandex_vpc_subnet.subnet.name
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: backend-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: backend-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: be-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: be-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on = [yandex_compute_disk.disks]
-  depends_on = [data.yandex_compute_instance.jump-servers]
+  depends_on = [data.yandex_compute_instance.masters]
 
 }
 
-data "yandex_compute_instance" "backend-servers" {
-  count      = length(module.backend-servers)
-  name       = module.backend-servers[count.index].vm_name
+data "yandex_compute_instance" "bes" {
+  count      = length(module.bes)
+  name       = module.bes[count.index].vm_name
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
-  depends_on = [module.backend-servers]
+  depends_on = [module.bes]
 }
 
-module "nginx-servers" {
+module "lbs" {
   source         = "./modules/instances"
-  count          = local.nginx_count
-  vm_name        = "nginx-${format("%02d", count.index + 1)}"
+  count          = local.lb_count
+  vm_name        = "lb-${format("%02d", count.index + 1)}"
   core_fraction  = 50
   vpc_name       = local.vpc_name
   #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
@@ -262,35 +258,35 @@ module "nginx-servers" {
       subnet_id = subnet.id
       nat       = true
     }
-    if subnet.name == "lab-subnet" #|| subnet.name == "nginx-subnet"
+    if subnet.name == "lab-subnet" #|| subnet.name == "lb-subnet"
   }
   #subnet_cidrs   = yandex_vpc_subnet.subnet.v4_cidr_blocks
   #subnet_name    = yandex_vpc_subnet.subnet.name
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: nginx-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.jump-servers[0].network_interface[0].ip_address}\nid: nginx-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: lb-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: lb-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
-  depends_on     = [data.yandex_compute_instance.jump-servers]
+  depends_on     = [data.yandex_compute_instance.masters]
 }
 
-data "yandex_compute_instance" "nginx-servers" {
-  count      = length(module.nginx-servers)
-  name       = module.nginx-servers[count.index].vm_name
+data "yandex_compute_instance" "lbs" {
+  count      = length(module.lbs)
+  name       = module.lbs[count.index].vm_name
   #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
-  depends_on = [module.nginx-servers]
+  depends_on = [module.lbs]
 }
 
 resource "local_file" "inventory_file" {
   content = templatefile("${path.module}/templates/inventory.tpl",
     {
-      jump-servers    = data.yandex_compute_instance.jump-servers
-      db-servers      = data.yandex_compute_instance.db-servers
+      masters    = data.yandex_compute_instance.masters
+      dbs      = data.yandex_compute_instance.dbs
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
-      backend-servers = data.yandex_compute_instance.backend-servers
-      nginx-servers   = data.yandex_compute_instance.nginx-servers
+      bes = data.yandex_compute_instance.bes
+      lbs   = data.yandex_compute_instance.lbs
       remote_user     = local.vm_user
     }
   )
@@ -300,11 +296,11 @@ resource "local_file" "inventory_file" {
 resource "local_file" "roster_file" {
   content = templatefile("${path.module}/templates/roster.tpl",
     {
-      jump-servers    = data.yandex_compute_instance.jump-servers
-      db-servers      = data.yandex_compute_instance.db-servers
+      masters    = data.yandex_compute_instance.masters
+      dbs      = data.yandex_compute_instance.dbs
       #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
-      backend-servers = data.yandex_compute_instance.backend-servers
-      nginx-servers   = data.yandex_compute_instance.nginx-servers
+      bes = data.yandex_compute_instance.bes
+      lbs   = data.yandex_compute_instance.lbs
       remote_user     = local.vm_user
     }
   )
@@ -333,13 +329,13 @@ resource "yandex_compute_disk" "disks" {
 #  depends_on = [yandex_compute_disk.disks]
 #}
 /*
-resource "null_resource" "nginx-servers" {
+resource "null_resource" "lbs" {
 
-  count = length(module.nginx-servers)
+  count = length(module.lbs)
 
   # Changes to the instance will cause the null_resource to be re-executed
   triggers = {
-    name = module.nginx-servers[count.index].vm_name
+    name = module.lbs[count.index].vm_name
   }
 
   
@@ -354,26 +350,26 @@ resource "null_resource" "nginx-servers" {
     type        = "ssh"
     user        = local.vm_user
     private_key = file(local.ssh_private_key)
-    host        = "${module.nginx-servers[count.index].instance_external_ip_address}"
+    host        = "${module.lbs[count.index].instance_external_ip_address}"
   }
 
   # Note that the -i flag expects a comma separated list, so the trailing comma is essential!
 
   provisioner "local-exec" {
-    command = "ansible-playbook -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i ./inventory.ini -l '${module.nginx-servers[count.index].instance_external_ip_address},' provision.yml"
-    #command = "ansible-playbook provision.yml -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${element(module.nginx-servers.nat_ip_address, 0)},' "
+    command = "ansible-playbook -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i ./inventory.ini -l '${module.lbs[count.index].instance_external_ip_address},' provision.yml"
+    #command = "ansible-playbook provision.yml -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${element(module.lbs.nat_ip_address, 0)},' "
   }
   
 }
 */
 /*
-resource "null_resource" "jump-servers" {
+resource "null_resource" "masters" {
 
-  count = length(module.jump-servers)
+  count = length(module.masters)
 
   # Changes to the instance will cause the null_resource to be re-executed
   triggers = {
-    name = "${module.jump-servers[count.index].vm_name}"
+    name = "${module.masters[count.index].vm_name}"
   }
 
   # Running the remote provisioner like this ensures that ssh is up and running
@@ -383,21 +379,21 @@ resource "null_resource" "jump-servers" {
     inline = ["sudo rpm --import https://repo.saltproject.io/salt/py3/redhat/8/x86_64/SALT-PROJECT-GPG-PUBKEY-2023.pub",
     "curl -fsSL https://repo.saltproject.io/salt/py3/redhat/8/x86_64/latest.repo | sudo tee /etc/yum.repos.d/salt.repo",
     "sudo dnf install salt-minion -y",
-    "sudo echo -e 'master:\n  - ${data.yandex_compute_instance.jump-servers[count.index].network_interface[0].ip_address}' > /etc/salt/minion"]
+    "sudo echo -e 'master:\n  - ${data.yandex_compute_instance.masters[count.index].network_interface[0].ip_address}' > /etc/salt/minion"]
   }
   
   connection {
     type        = "ssh"
     user        = local.vm_user
     private_key = file(local.ssh_private_key)
-    host        = data.yandex_compute_instance.jump-servers[count.index].network_interface[0].ip_address
+    host        = data.yandex_compute_instance.masters[count.index].network_interface[0].ip_address
   }
   
   # Note that the -i flag expects a comma separated list, so the trailing comma is essential!
 
   provisioner "local-exec" {
-    command = "ansible-playbook -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${module.backend-servers[count.index].instance_external_ip_address},' provision.yml"
-    #command = "ansible-playbook provision.yml -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${element(module.backend-servers.nat_ip_address, 0)},' "
+    command = "ansible-playbook -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${module.bes[count.index].instance_external_ip_address},' provision.yml"
+    #command = "ansible-playbook provision.yml -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${element(module.bes.nat_ip_address, 0)},' "
   }
   
 }

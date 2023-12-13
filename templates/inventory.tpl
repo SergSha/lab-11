@@ -1,35 +1,35 @@
 
 [all]
-%{ for jump-server in jump-servers ~}
-${ jump-server["name"] } ansible_host=${ jump-server.network_interface[0].ip_address } ip=${ jump-server.network_interface[0].ip_address } public_ip=${ jump-server.network_interface[0].nat_ip_address }
+%{ for master in masters ~}
+${ master["name"] } ansible_host=${ master.network_interface[0].ip_address } ip=${ master.network_interface[0].ip_address } public_ip=${ master.network_interface[0].nat_ip_address }
 %{ endfor ~}
-%{ for backend-server in backend-servers ~}
-${ backend-server["name"] } ansible_host=${ backend-server.network_interface[0].ip_address } ip=${ backend-server.network_interface[0].ip_address } public_ip=${ backend-server.network_interface[0].nat_ip_address }
+%{ for be in bes ~}
+${ be["name"] } ansible_host=${ be.network_interface[0].ip_address } ip=${ be.network_interface[0].ip_address } public_ip=${ be.network_interface[0].nat_ip_address }
 %{ endfor ~}
-%{ for nginx-server in nginx-servers ~}
-${ nginx-server["name"] } ansible_host=${ nginx-server.network_interface[0].ip_address } ip=${ nginx-server.network_interface[0].ip_address } public_ip=${ nginx-server.network_interface[0].nat_ip_address }
-%{ endfor ~}
-
-[jump_servers]
-%{ for jump-server in jump-servers ~}
-${ jump-server["name"] }
+%{ for lb in lbs ~}
+${ lb["name"] } ansible_host=${ lb.network_interface[0].ip_address } ip=${ lb.network_interface[0].ip_address } public_ip=${ lb.network_interface[0].nat_ip_address }
 %{ endfor ~}
 
-[db_servers]
-%{ for db-server in db-servers ~}
-${ db-server["name"] }
+[masters]
+%{ for master in masters ~}
+${ master["name"] }
 %{ endfor ~}
 
-[backend_servers]
-%{ for backend-server in backend-servers ~}
-${ backend-server["name"] }
+[dbs]
+%{ for db in dbs ~}
+${ db["name"] }
 %{ endfor ~}
 
-[nginx_servers]
-%{ for nginx-server in nginx-servers ~}
-${ nginx-server["name"] }
+[bes]
+%{ for be in bes ~}
+${ be["name"] }
+%{ endfor ~}
+
+[lbs]
+%{ for lb in lbs ~}
+${ lb["name"] }
 %{ endfor ~}
 
 [all:vars]
-ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ProxyJump="${ remote_user }@${ jump-servers[0].network_interface[0].nat_ip_address }"'
-#ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ProxyCommand="ssh -p 22 -W %h:%p -q ${ remote_user }@${ jump-servers[0].network_interface[0].nat_ip_address }"'
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ProxyJump="${ remote_user }@${ masters[0].network_interface[0].nat_ip_address }"'
+#ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ProxyCommand="ssh -p 22 -W %h:%p -q ${ remote_user }@${ masters[0].network_interface[0].nat_ip_address }"'

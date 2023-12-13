@@ -4,8 +4,8 @@ base:
     - chrony
   'db-*':
     - db
-  'backend-*':
-    - backend
-  'nginx-*':
-    - balancer
+  'be-*':
+    - be
+  'lb-*':
+    - lb
     

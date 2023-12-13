@@ -1,30 +1,30 @@
-%{ for jump-server in jump-servers ~}
-${ jump-server["name"] }:
-  host: ${ jump-server.network_interface[0].nat_ip_address }
+%{ for master in masters ~}
+${ master["name"] }:
+  host: ${ master.network_interface[0].nat_ip_address }
   user: cloud-user
   priv: /home/user/.ssh/otus
   sudo: True  
 %{ endfor ~}
 
-%{ for db-server in db-servers ~}
-${ db-server["name"] }:
-  host: ${ db-server.network_interface[0].nat_ip_address }
+%{ for db in dbs ~}
+${ db["name"] }:
+  host: ${ db.network_interface[0].nat_ip_address }
   user: cloud-user
   priv: /home/user/.ssh/otus
   sudo: True  
 %{ endfor ~}
 
-%{ for backend-server in backend-servers ~}
-${ backend-server["name"] }:
-  host: ${ backend-server.network_interface[0].nat_ip_address }
+%{ for be in bes ~}
+${ be["name"] }:
+  host: ${ be.network_interface[0].nat_ip_address }
   user: cloud-user
   priv: /home/user/.ssh/otus
   sudo: True  
 %{ endfor ~}
 
-%{ for nginx-server in nginx-servers ~}
-${ nginx-server["name"] }:
-  host: ${ nginx-server.network_interface[0].nat_ip_address }
+%{ for lb in lbs ~}
+${ lb["name"] }:
+  host: ${ lb.network_interface[0].nat_ip_address }
   user: cloud-user
   priv: /home/user/.ssh/otus
   sudo: True  

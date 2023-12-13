@@ -1,8 +1,8 @@
 
-output "jump-servers-info" {
+output "masters-info" {
   description = "General information about created VMs"
   value = {
-    for vm in data.yandex_compute_instance.jump-servers :
+    for vm in data.yandex_compute_instance.masters :
     vm.name => {
       ip_address     = vm.network_interface.*.ip_address
       nat_ip_address = vm.network_interface.*.nat_ip_address
@@ -10,10 +10,10 @@ output "jump-servers-info" {
   }
 }
 
-output "db-servers-info" {
+output "dbs-info" {
   description = "General information about created VMs"
   value = {
-    for vm in data.yandex_compute_instance.db-servers :
+    for vm in data.yandex_compute_instance.dbs :
     vm.name => {
       ip_address     = vm.network_interface.*.ip_address
       nat_ip_address = vm.network_interface.*.nat_ip_address
@@ -21,10 +21,10 @@ output "db-servers-info" {
   }
 }
 
-output "backend-servers-info" {
+output "bes-info" {
   description = "General information about created VMs"
   value = {
-    for vm in data.yandex_compute_instance.backend-servers :
+    for vm in data.yandex_compute_instance.bes :
     vm.name => {
       ip_address     = vm.network_interface.*.ip_address
       nat_ip_address = vm.network_interface.*.nat_ip_address
@@ -32,10 +32,10 @@ output "backend-servers-info" {
   }
 }
 
-output "nginx-servers-info" {
+output "lbs-info" {
   description = "General information about created VMs"
   value = {
-    for vm in data.yandex_compute_instance.nginx-servers :
+    for vm in data.yandex_compute_instance.lbs :
     vm.name => {
       ip_address     = vm.network_interface.*.ip_address
       nat_ip_address = vm.network_interface.*.nat_ip_address

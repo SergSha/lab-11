@@ -48,13 +48,13 @@ mysql:
 {% set temp_root_pass = salt['cmd.shell']('grep \'temporary password\' /var/log/mysqld.log | awk \'{print $NF}\' | tail -n 1') %}
 
 create_my_cnf:
-  file.write:
+  file.append:
     - name: /root/.my.cnf
     - template: jinja
     - text: |
         [client]
         user={{ mysql_root_user }}
-        password={{ temp_root_pass.stdout }}
+        password={{ temp_root_pass }}
     - require:
       - service: mysql
 
@@ -99,7 +99,7 @@ create_mysql_user:
     - name: {{ wp_db_user }}
     - host: '10.10.0.0/255.255.0.0'
     - password: {{ wp_db_pass }}
-    #- connection_host: ## mysql_host ##
+    - connection_host: '%'
     - connection_user: {{ mysql_root_user }}
     - connection_pass: {{ mysql_root_password }}
     - connection_charset: utf8
