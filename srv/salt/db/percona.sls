@@ -60,7 +60,7 @@ create_my_cnf:
 
 #set_root_pass:
 #  cmd.run:
-#    - name: mysql --connect-expired-password -e "ALTER USER '{{ mysql_root_user.stdout }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
+#    - name: mysql --connect-expired-password -e "ALTER USER '{{ mysql_root_user }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
 
 change_root_pass:
   mysql_user.present:
