@@ -51,8 +51,9 @@ create_my_cnf:
         temp_root_pass=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1)
         cat << EOF > /root/.my.cnf
         [client]
-        user={{ mysql_root_user }}
-        password=$temp_root_pass
+        user='{{ mysql_root_user }}'
+        password='$temp_root_pass'
+        EOF
     - require:
       - service: mysql
 
