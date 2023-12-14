@@ -1,7 +1,7 @@
 ---
 nginx:
-  pkg:
-    - installed
+  pkg.installed:
+    - name: nginx
   service.running:
     - watch:
         - file: /etc/nginx/nginx.conf

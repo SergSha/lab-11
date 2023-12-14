@@ -1,5 +1,5 @@
 ---
 include:
- #- .nftables
+ - .nftables
  - .percona
 ...

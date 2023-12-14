@@ -1,6 +1,6 @@
 ---
 include:
- #- .nftables
+ - .nftables
  - .selinux
  - .php-fpm
  - .nginx

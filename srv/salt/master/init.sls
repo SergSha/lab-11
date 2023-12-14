@@ -1,6 +1,4 @@
 ---
 include:
  - .nftables
- - .selinux
- - .nginx
 ...

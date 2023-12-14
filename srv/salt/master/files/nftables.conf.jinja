@@ -3,9 +3,8 @@
 flush ruleset
 
 table ip filter {
-
-        chain MYSQL_INP {
-                tcp dport {{ mysql_port }} ct state new counter accept
+        chain SALT_INP {
+                tcp dport 2224 ct state new counter accept
         }
         chain INPUT {
                 type filter hook input priority filter; policy drop;
@@ -13,9 +12,9 @@ table ip filter {
                 iifname "lo" counter accept
                 tcp dport 22 ct state new counter accept
                 udp dport 323 counter accept
-                ip saddr {{ subnet_cidrs }} icmp type echo-request counter accept
+                ip saddr {{ pillar['mine_functions.network.ip_addrs.cidr'] }} icmp type echo-request counter accept
                 ct state established,related counter accept
-                counter jump MYSQL_INP
+                counter jump SALT_INP
         }
 
         chain FORWARD {
