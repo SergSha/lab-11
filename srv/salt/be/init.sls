@@ -2,7 +2,7 @@
 include:
  #- .nftables
  - .selinux
- - .nginx
  - .php-fpm
+ - .nginx
  - .wordpress
 ...
