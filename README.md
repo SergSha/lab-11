@@ -246,7 +246,44 @@ backend-01:
 ```
 
 
+```
+[root@master-01 ~]# salt 'db-01' cmd.run 'nft list ruleset'
+db-01:
+    table ip filter {
+    	chain MYSQL_INP {
+    		ip saddr 10.10.10.13 tcp dport 3306 ct state new counter packets 2 bytes 120 accept
+    	}
+    
+    	chain INPUT {
+    		type filter hook input priority filter; policy drop;
+    		ct state invalid counter packets 0 bytes 0 drop
+    		iifname "lo" counter packets 0 bytes 0 accept
+    		udp dport 323 counter packets 0 bytes 0 accept
+    		ct state established,related counter packets 9532 bytes 87220025 accept
+    		counter packets 253 bytes 17459 jump MYSQL_INP
+    	}
+    
+    	chain FORWARD {
+    		type filter hook forward priority filter; policy drop;
+    	}
+    
+    	chain OUTPUT {
+    		type filter hook output priority filter; policy drop;
+    		ct state established,related,new counter packets 6362 bytes 394066 accept
+    	}
+    }
+[root@master-01 ~]# 
+```
 
+
+```
+salt 'db-01' cmd.run 'ss -tulpn'
+```
+
+
+```
+salt 'db-01' cmd.run 'systemctl status sshd'
+```
 
 
 

@@ -30,7 +30,7 @@ locals {
   master_count = "1"
   db_count     = "1"
   iscsi_count  = "0"
-  be_count     = "1"
+  be_count     = "2"
   lb_count     = "1"
   /*
   disk = {
@@ -103,8 +103,6 @@ resource "yandex_vpc_route_table" "rt" {
   static_route {
     destination_prefix = "0.0.0.0/0"
     gateway_id         = yandex_vpc_gateway.nat_gateway.id
-    #next_hop_address   = yandex_compute_instance.nat-instance.network_interface.0.ip_address
-    #next_hop_address = data.yandex_lb_network_load_balancer.keepalived.internal_address_spec.0.address
   }
 }
 
@@ -128,7 +126,6 @@ module "masters" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: master-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: master-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
@@ -230,7 +227,6 @@ module "bes" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: be-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: be-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on = [yandex_compute_disk.disks]
@@ -265,7 +261,6 @@ module "lbs" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-#  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: lb-${format("%02d", count.index + 1)}\nmine_functions:\n  test.ping: []\n  network.ip_addrs:\n    interface: eth0\n    cidr: 10.0.0.0/8")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: lb-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
@@ -328,40 +323,6 @@ resource "yandex_compute_disk" "disks" {
 #  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
 #  depends_on = [yandex_compute_disk.disks]
 #}
-/*
-resource "null_resource" "lbs" {
-
-  count = length(module.lbs)
-
-  # Changes to the instance will cause the null_resource to be re-executed
-  triggers = {
-    name = module.lbs[count.index].vm_name
-  }
-
-  
-  # Running the remote provisioner like this ensures that ssh is up and running
-  # before running the local provisioner
-
-  provisioner "remote-exec" {
-    inline = ["echo 'Wait until SSH is ready'"]
-  }
-
-  connection {
-    type        = "ssh"
-    user        = local.vm_user
-    private_key = file(local.ssh_private_key)
-    host        = "${module.lbs[count.index].instance_external_ip_address}"
-  }
-
-  # Note that the -i flag expects a comma separated list, so the trailing comma is essential!
-
-  provisioner "local-exec" {
-    command = "ansible-playbook -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i ./inventory.ini -l '${module.lbs[count.index].instance_external_ip_address},' provision.yml"
-    #command = "ansible-playbook provision.yml -u '${local.vm_user}' --private-key '${local.ssh_private_key}' --become -i '${element(module.lbs.nat_ip_address, 0)},' "
-  }
-  
-}
-*/
 /*
 resource "null_resource" "masters" {
 
