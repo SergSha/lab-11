@@ -57,48 +57,34 @@ create_my_cnf:
     - require:
       - service: mysql
 
-#set_root_pass:
-#  cmd.run:
-#    - name: mysql --connect-expired-password -e "ALTER USER '{{ mysql_root_user }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
-
-change_root_pass:
-  mysql_user.present:
-    - name: {{ mysql_root_user }}
-    - host: '10.10.0.0/255.255.0.0'
-    - password: {{ mysql_root_password }}
-
-/root/.my.cnf:
-  file.line:
-    - name: /root/.my.cnf
-    - mode: replace
-    - match: password=.*
-    - content: password={{ mysql_root_password }}
-
-create_fnv1a_64_fnv_64_murmur_hash:
+change_root_password:
   cmd.run:
-    - names:
-      - /usr/bin/mysql -e "CREATE FUNCTION fnv1a_64 RETURNS INTEGER SONAME 'libfnv1a_udf.so'"
-      - /usr/bin/mysql -e "CREATE FUNCTION fnv_64 RETURNS INTEGER SONAME 'libfnv_udf.so'"
-      - /usr/bin/mysql -e "CREATE FUNCTION murmur_hash RETURNS INTEGER SONAME 'libmurmur_udf.so'"
-
-create_mysql_database:
-  mysql_database.present:
-    - name: {{ wp_db_name }}
-    - connection_user: {{ mysql_root_user }}
-    - connection_pass: {{ mysql_root_password }}
+    - name: |
+        temp_root_pass=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1)
+        /usr/bin/mysql -u{{ mysql_root_user }} -p$temp_root_pass --connect-expired-password -e "ALTER USER '{{ mysql_root_user }}'@'localhost' IDENTIFIED WITH caching_sha2_password BY '{{ mysql_root_password }}';"
     - require:
       - service: mysql
 
+create_fnv1a_64_fnv_64_murmur_hash:
+  cmd.run:
+    - name: |
+        /usr/bin/mysql -u{{ mysql_root_user }} -p{{ mysql_root_password }} -e "CREATE FUNCTION fnv1a_64 RETURNS INTEGER SONAME 'libfnv1a_udf.so'"
+        /usr/bin/mysql -u{{ mysql_root_user }} -p{{ mysql_root_password }} -e "CREATE FUNCTION fnv_64 RETURNS INTEGER SONAME 'libfnv_udf.so'"
+        /usr/bin/mysql -u{{ mysql_root_user }} -p{{ mysql_root_password }} -e "CREATE FUNCTION murmur_hash RETURNS INTEGER SONAME 'libmurmur_udf.so'"
+
+create_mysql_database:
+  cmd.run:
+    - name: /usr/bin/mysql -u{{ mysql_root_user }} -p{{ mysql_root_password }} -e "CREATE DATABASE {{ wp_db_name }}"
+    - require:
+      - service: mysql
 
 create_mysql_user:
-  mysql_user.present:
-    - name: {{ wp_db_user }}
-    - host: '10.10.0.0/255.255.0.0'
-    - password: {{ wp_db_pass }}
-    - connection_host: '%'
-    - connection_user: {{ mysql_root_user }}
-    - connection_pass: {{ mysql_root_password }}
-    - connection_charset: utf8
+  cmd.run:
+    - name: |
+        /usr/bin/mysql -u{{ mysql_root_user }} -p{{ mysql_root_password }} -e "CREATE USER '{{ wp_db_user }}'@'10.10.10.%' IDENTIFIED WITH caching_sha2_password BY '{{ wp_db_pass }}';"
+        /usr/bin/mysql -u{{ mysql_root_user }} -p{{ mysql_root_password }} -e "GRANT ALL PRIVILEGES ON *.* TO '{{ wp_db_user }}'@'10.10.10.%';"
+    - require:
+      - service: mysql
 ...
 
 
