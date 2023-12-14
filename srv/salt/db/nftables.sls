@@ -10,7 +10,7 @@ nftables:
       - pkg: nftables
 /etc/sysconfig/nftables.conf:
   file.managed:
-    - source: salt://master/files/nftables/nftables.conf.jinja
+    - source: salt://db/files/nftables/nftables.conf.jinja
     - template: jinja
     - user: root
     - group: root
