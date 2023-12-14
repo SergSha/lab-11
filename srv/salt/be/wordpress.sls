@@ -23,7 +23,7 @@ extract_wordpress:
 configure_wordpress:
   file.managed:
     - name: /var/www/wordpress/wp-config.php
-    - source: salt://backend/files/wordpress/wp-config.php.jinja
+    - source: salt://be/files/wordpress/wp-config.php.jinja
     - template: jinja
     - user: nginx
     - group: nginx
