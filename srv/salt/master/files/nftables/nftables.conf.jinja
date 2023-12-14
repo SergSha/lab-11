@@ -4,7 +4,9 @@ flush ruleset
 
 table ip filter {
         chain SALT_INP {
-                tcp dport { 4505,4506 } ct state new counter accept
+{%- for addrs in salt['mine.get'](tgt='*', fun='network.ip_addrs', tgt_type='glob').values() %}
+                ip saddr {{ addrs[0] }} tcp dport { 4505,4506 } ct state new counter accept
+{%- endfor %}
         }
         chain INPUT {
                 type filter hook input priority filter; policy drop;
@@ -12,7 +14,6 @@ table ip filter {
                 iifname "lo" counter accept
                 tcp dport 22 ct state new counter accept
                 udp dport 323 counter accept
-                ip saddr {{ pillar['mine_functions.network.ip_addrs.cidr'] }} icmp type echo-request counter accept
                 ct state established,related counter accept
                 counter jump SALT_INP
         }

@@ -4,7 +4,9 @@ flush ruleset
 
 table ip filter {
         chain NGINX_INP {
-                tcp dport { 80,443,8080 } ct state new counter accept
+{%- for addrs in salt['mine.get'](tgt='lb-*', fun='network.ip_addrs', tgt_type='glob').values() %}
+                ip saddr {{ addrs[0] }} tcp dport { 80,443,8080 } ct state new counter accept
+{%- endfor %}
         }
         #chain PHP_FPM_INP {
         #        tcp dport 9000 ct state new counter accept
@@ -15,7 +17,6 @@ table ip filter {
                 iifname "lo" counter accept
                 #tcp dport 22 ct state new counter accept
                 udp dport 323 counter accept
-                ip saddr {{ pillar['mine_functions.network.ip_addrs.cidr'] }} icmp type echo-request counter accept
                 ct state established,related counter accept
                 counter jump NGINX_INP
                 #counter jump PHP_FPM_INP
