@@ -20,7 +20,7 @@ otus | saltstack
 
 #### Создание стенда
 
-Стенд будем разворачивать с помощью Terraform на Proxmox, настройку серверов будем выполнять с помощью Saltstack.
+Стенд будем разворачивать с помощью Terraform на YandexCloud, настройку серверов будем выполнять с помощью Saltstack.
 
 Необходимые файлы размещены в репозитории GitHub по ссылке:
 ```
@@ -58,6 +58,10 @@ ssh_public_key  = "~/.ssh/id_rsa.pub"
 ssh_private_key = "~/.ssh/id_rsa"
 ```
 
+Стенд был взят из лабораторной работы 5 https://github.com/SergSha/lab-05. Стенд состоит из salt-мастера master-01 и salt-миньонов: балансировщик lb-01, бэкендов be-01 и be-02, сервер хранения базы данных db-01. 
+
+Инфраструктуру будем разворачивать с помощью Terraform, а все установки и настройки необходимых приложений будем полностью реализовывать с помощью команд SaltStack.
+
 Для того чтобы развернуть стенд, нужно выполнить следующую команду:
 ```
 terraform init && terraform apply -auto-approve
@@ -70,151 +74,67 @@ Outputs:
 bes-info = {
   "be-01" = {
     "ip_address" = tolist([
-      "10.10.10.7",
+      "10.10.10.16",
     ])
     "nat_ip_address" = tolist([
-      "51.250.110.54",
+      "",
     ])
   }
   "be-02" = {
     "ip_address" = tolist([
-      "10.10.10.5",
+      "10.10.10.8",
     ])
     "nat_ip_address" = tolist([
-      "158.160.27.141",
+      "",
     ])
   }
 }
 dbs-info = {
   "db-01" = {
     "ip_address" = tolist([
-      "10.10.10.19",
+      "10.10.10.31",
     ])
     "nat_ip_address" = tolist([
-      "158.160.20.238",
+      "",
     ])
   }
 }
 lbs-info = {
   "lb-01" = {
     "ip_address" = tolist([
-      "10.10.10.23",
+      "10.10.10.15",
     ])
     "nat_ip_address" = tolist([
-      "51.250.107.199",
+      "51.250.103.133",
     ])
   }
 }
 masters-info = {
   "master-01" = {
     "ip_address" = tolist([
-      "10.10.10.3",
+      "10.10.10.5",
     ])
     "nat_ip_address" = tolist([
-      "51.250.22.169",
+      "84.201.155.81",
     ])
   }
 }
 ```
 
-Затем подклю
-
-На всех серверах будут установлены ОС Almalinux 9, настроены смнхронизация времени Chrony, система принудительного контроля доступа SELinux, в качестве firewall будет использоваться NFTables.
-
-Стенд был взят из лабораторной работы 5 https://github.com/SergSha/lab-05. Стенд состоит из salt-мастера master-01 и salt-миньонов: балансировщик lb-01, бэкендов be-01 и be-02, сервер хранения базы данных db-01.
-
-
-Consul-server развернём на кластере из трёх нод consul-01, consul-02, consul-03. На балансировщиках (nginx-01 и nginx-02) и бэкендах (backend-01 и backend-02) будут установлены клиентские версии Consul. На баланcировщиках также будут установлены и настроены сервис consul-template, которые будут динамически подменять конфигурационные файлы Nginx. На бэкендах будут установлены wordpress. Проверка (check) на доступность сервисов на клиентских серверах будет осуществляться по http.
-
-Так как на YandexCloud ограничено количество выделяемых публичных IP адресов, в качестве JumpHost, через который будем подключаться по SSH (в частности для Ansible) к другим серверам той же подсети будем использовать сервер nginx-01.
-
 Список виртуальных машин после запуска стенда:
 
 <img src="pics/screen-001.png" alt="screen-001.png" />
 
-Для проверки работы стенда воспользуемся установленным на бэкендах Wordpress:
+На всех серверах установлены ОС Almalinux 9.
 
-<img src="pics/screen-002.png" alt="screen-002.png" />
-
-Значение IP адреса сайта можно получить от балансировщика lb-01:
-
-<img src="pics/screen-003.png" alt="screen-003.png" />
-
-
-
-
-
+Все последующие команды будем запускать от имени root.
+На мастер master-01 с помощью salt-ssh отправим следующую команду, чтобы убедиться, что на мастере подключились необхлдимые ключи от миньонов:
 ```
-[root@jump-01 ~]# salt '*' saltutil.refresh_pillar
-jump-01:
-    True
-nginx-01:
-    True
-db-01:
-    True
-backend-01:
-    True
-[root@jump-01 ~]# salt '*' mine.update
-db-01:
-    True
-nginx-01:
-    True
-jump-01:
-    True
-backend-01:
-    True
-[root@jump-01 ~]# 
+[root@rocky ~]# salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "salt-key -L"
 ```
-
+Получаем следующий вывод:
 ```
-[root@jump-01 ~]# salt '*' mine.get '*' network.ip_addrs
-db-01:
-    ----------
-    backend-01:
-        - 10.10.10.17
-    db-01:
-        - 10.10.10.36
-    jump-01:
-        - 10.10.10.21
-    nginx-01:
-        - 10.10.10.26
-jump-01:
-    ----------
-    backend-01:
-        - 10.10.10.17
-    db-01:
-        - 10.10.10.36
-    jump-01:
-        - 10.10.10.21
-    nginx-01:
-        - 10.10.10.26
-nginx-01:
-    ----------
-    backend-01:
-        - 10.10.10.17
-    db-01:
-        - 10.10.10.36
-    jump-01:
-        - 10.10.10.21
-    nginx-01:
-        - 10.10.10.26
-backend-01:
-    ----------
-    backend-01:
-        - 10.10.10.17
-    db-01:
-        - 10.10.10.36
-    jump-01:
-        - 10.10.10.21
-    nginx-01:
-        - 10.10.10.26
-[root@jump-01 ~]# 
-```
-
-
-```
-[root@rocky user]# salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@51.250.22.169 cmd.run "salt-key -L"
-51.250.22.169:
+84.201.155.81:
     Accepted Keys:
     be-01
     be-02
@@ -225,54 +145,199 @@ backend-01:
     Unaccepted Keys:
     Rejected Keys:
 ```
+Как видим, все ключи от миньонов приняты.
 
+Запустим через мастер master-01 команду для применения всех необходимых настроек:
 ```
-[root@jump-01 ~]# salt '*' state.apply
-```
-
-```
-salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@51.250.22.169 cmd.run "salt \* state.apply test=true"
+salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "salt '*' state.apply"
 ```
 
+На всех серверах будут :
+- настроена синхронизация времени Chrony, 
+- настроена система принудительного контроля доступа SELinux, 
+- открыты только необходимые порты (в качестве firewall используется NFTables):
+    на мастере master-01 открыты порты 4505, 4506 для обмена сообщениями с миньонами, а также порт 22 управления мастером с помощью команды salt-ssh;
+    на балансировщике lb-01 открыты порты 80, 443, 8080 для доступа к сайту (worpress);
+    на бэкендах be-01 и be-02 открыт порт 80 для связи с балансировщиком lb-01;
+    на сервере баз данных db-01 открыт порт 3306 для доступа от бэкендов be-01 и be-02 к базе данных.
+- установлены и настроены необходимые приложения:
+    на балансировщике lb-01: nginx;
+    бэкендах be-01 и be-02: nginx, php-fpm, wordpress;
+    на сервере базы данных: percona-server
+- на миньонах отключены сервисы sshd и закрыты порты 22.
 
+Посмотрим правила nftables на всех серверах:
 ```
-[root@master-01 ~]# salt 'db-01' cmd.run 'nft list ruleset'
-db-01:
-    table ip filter {
-    	chain MYSQL_INP {
-    		ip saddr 10.10.10.13 tcp dport 3306 ct state new counter packets 2 bytes 120 accept
-    	}
-    
-    	chain INPUT {
-    		type filter hook input priority filter; policy drop;
-    		ct state invalid counter packets 0 bytes 0 drop
-    		iifname "lo" counter packets 0 bytes 0 accept
-    		udp dport 323 counter packets 0 bytes 0 accept
-    		ct state established,related counter packets 9532 bytes 87220025 accept
-    		counter packets 253 bytes 17459 jump MYSQL_INP
-    	}
-    
-    	chain FORWARD {
-    		type filter hook forward priority filter; policy drop;
-    	}
-    
-    	chain OUTPUT {
-    		type filter hook output priority filter; policy drop;
-    		ct state established,related,new counter packets 6362 bytes 394066 accept
-    	}
-    }
-[root@master-01 ~]# 
+[root@rocky ~]# salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "salt '*' cmd.run 'nft list ruleset'"
+84.201.155.81:
+    be-01:
+        table ip filter {
+        	chain NGINX_INP {
+        		ip saddr 10.10.10.15 tcp dport 80 ct state new counter packets 3 bytes 180 accept
+        	}
+        
+        	chain INPUT {
+        		type filter hook input priority filter; policy drop;
+        		ct state invalid counter packets 0 bytes 0 drop
+        		iifname "lo" counter packets 0 bytes 0 accept
+        		ct state established,related counter packets 4398 bytes 31580438 accept
+        		counter packets 15 bytes 6768 jump NGINX_INP
+        	}
+        
+        	chain FORWARD {
+        		type filter hook forward priority filter; policy drop;
+        	}
+        
+        	chain OUTPUT {
+        		type filter hook output priority filter; policy drop;
+        		ct state established,related,new counter packets 3334 bytes 395041 accept
+        	}
+        }
+    lb-01:
+        table ip filter {
+        	chain NGINX_INP {
+        		tcp dport { 80, 443, 8080 } ct state new counter packets 2948 bytes 153684 accept
+        	}
+        
+        	chain INPUT {
+        		type filter hook input priority filter; policy drop;
+        		ct state invalid counter packets 1 bytes 60 drop
+        		iifname "lo" counter packets 0 bytes 0 accept
+        		ct state established,related counter packets 625 bytes 3159297 accept
+        		counter packets 3490 bytes 183727 jump NGINX_INP
+        	}
+        
+        	chain FORWARD {
+        		type filter hook forward priority filter; policy drop;
+        	}
+        
+        	chain OUTPUT {
+        		type filter hook output priority filter; policy drop;
+        		ct state established,related,new counter packets 3577 bytes 207620 accept
+        	}
+        }
+    master-01:
+        table ip filter {
+        	chain SALT_INP {
+        		ip saddr 10.10.10.16 tcp dport { 4505, 4506 } ct state new counter packets 12 bytes 14672 accept
+        		ip saddr 10.10.10.8 tcp dport { 4505, 4506 } ct state new counter packets 13 bytes 14724 accept
+        		ip saddr 10.10.10.31 tcp dport { 4505, 4506 } ct state new counter packets 10 bytes 13501 accept
+        		ip saddr 10.10.10.15 tcp dport { 4505, 4506 } ct state new counter packets 13 bytes 12286 accept
+        		ip saddr 10.10.10.5 tcp dport { 4505, 4506 } ct state new counter packets 0 bytes 0 accept
+        	}
+        
+        	chain INPUT {
+        		type filter hook input priority filter; policy drop;
+        		ct state invalid counter packets 2 bytes 80 drop
+        		iifname "lo" counter packets 70 bytes 9316 accept
+        		tcp dport 22 ct state new counter packets 248 bytes 14820 accept
+        		ct state established,related counter packets 3985 bytes 1020183 accept
+        		counter packets 560 bytes 77223 jump SALT_INP
+        	}
+        
+        	chain FORWARD {
+        		type filter hook forward priority filter; policy drop;
+        	}
+        
+        	chain OUTPUT {
+        		type filter hook output priority filter; policy drop;
+        		ct state established,related,new counter packets 4103 bytes 732235 accept
+        	}
+        }
+    be-02:
+        table ip filter {
+        	chain NGINX_INP {
+        		ip saddr 10.10.10.15 tcp dport 80 ct state new counter packets 3 bytes 180 accept
+        	}
+        
+        	chain INPUT {
+        		type filter hook input priority filter; policy drop;
+        		ct state invalid counter packets 0 bytes 0 drop
+        		iifname "lo" counter packets 0 bytes 0 accept
+        		ct state established,related counter packets 4373 bytes 31585875 accept
+        		counter packets 15 bytes 6768 jump NGINX_INP
+        	}
+        
+        	chain FORWARD {
+        		type filter hook forward priority filter; policy drop;
+        	}
+        
+        	chain OUTPUT {
+        		type filter hook output priority filter; policy drop;
+        		ct state established,related,new counter packets 3154 bytes 401498 accept
+        	}
+        }
+    db-01:
+        table ip filter {
+        	chain MYSQL_INP {
+        		ip saddr 10.10.10.16 tcp dport 3306 ct state new counter packets 3 bytes 180 accept
+        		ip saddr 10.10.10.8 tcp dport 3306 ct state new counter packets 3 bytes 180 accept
+        	}
+        
+        	chain INPUT {
+        		type filter hook input priority filter; policy drop;
+        		ct state invalid counter packets 0 bytes 0 drop
+        		iifname "lo" counter packets 0 bytes 0 accept
+        		ct state established,related counter packets 13226 bytes 87417919 accept
+        		counter packets 18 bytes 6948 jump MYSQL_INP
+        	}
+        
+        	chain FORWARD {
+        		type filter hook forward priority filter; policy drop;
+        	}
+        
+        	chain OUTPUT {
+        		type filter hook output priority filter; policy drop;
+        		ct state established,related,new counter packets 10168 bytes 584245 accept
+        	}
+        }
 ```
 
-
+Убедимся, что на всех миньонах не включены сервисы sshd:
 ```
-salt 'db-01' cmd.run 'ss -tulpn'
+[root@rocky ~]# salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "salt '*' cmd.run 'systemctl is-enabled sshd'"
+84.201.155.81:
+    be-01:
+        disabled
+    lb-01:
+        disabled
+    master-01:
+        enabled
+    be-02:
+        disabled
+    db-01:
+        disabled
 ```
 
-
+и не запущены сервисы sshd:
 ```
-salt 'db-01' cmd.run 'systemctl status sshd'
+[root@rocky ~]# salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "salt '*' cmd.run 'systemctl is-active sshd'"
+84.201.155.81:
+    be-01:
+        inactive
+    lb-01:
+        inactive
+    master-01:
+        active
+    db-01:
+        inactive
+    be-02:
+        inactive
 ```
 
+Проверяем работу сайта на wordpress, вставив в адресную строку браузера публичный ip адресс балансировщика lb-01:
+
+<img src="pics/screen-002.png" alt="screen-002.png" />
+
+<img src="pics/screen-003.png" alt="screen-003.png" />
 
 
+Можно сделать вывод, что развёрнутая система, настроенная с помощью команд SaltStack, работает должным образом.
+
+
+#### Удаление стенда
+
+Удалить развернутый стенд командой:
+```
+terraform destroy -auto-approve
+```

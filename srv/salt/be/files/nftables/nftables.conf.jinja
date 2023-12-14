@@ -16,7 +16,6 @@ table ip filter {
                 ct state invalid counter drop
                 iifname "lo" counter accept
                 #tcp dport 22 ct state new counter accept
-                udp dport 323 counter accept
                 ct state established,related counter accept
                 counter jump NGINX_INP
                 #counter jump PHP_FPM_INP
