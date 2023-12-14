@@ -15,7 +15,7 @@ download_wordpress:
 
 extract_wordpress:
   archive.extracted:
-    - name: /var/www/wordpress
+    - name: /var/www/
     - source: /tmp/wordpress.tar.gz
     - user: nginx
     - group: nginx

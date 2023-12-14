@@ -6,7 +6,7 @@ php-packages:
       - php-mysqlnd
       - php-bcmath
       #- php-ctype
-      - php-json
+      #- php-json
       - php-mbstring
       - php-pdo
       #- php-tokenizer

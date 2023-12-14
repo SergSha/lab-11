@@ -39,7 +39,7 @@ http {
         listen       80 default_server;
         listen       [::]:80 default_server;
         server_name  _;
-        root         /usr/share/nginx/html;
+        root         /var/www/wordpress;
 
         # Load configuration files for the default server block.
         include /etc/nginx/default.d/*.conf;
@@ -65,7 +65,7 @@ http {
                 #NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
                 include fastcgi_params;
                 fastcgi_intercept_errors on;
-                fastcgi_pass php;
+                fastcgi_pass php-fpm;
                 #The following parameter can be also included in fastcgi_params file
                 fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
         }

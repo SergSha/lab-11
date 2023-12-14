@@ -10,5 +10,5 @@ runcmd:
   - sleep 90
   - salt-key -a 'master-*' -y
   - salt-key -a 'db-*' -y
-  - salt-key -a 'backend-*' -y
-  - salt-key -a 'nginx-*' -y
+  - salt-key -a 'be-*' -y
+  - salt-key -a 'lb-*' -y
