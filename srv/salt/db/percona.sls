@@ -45,18 +45,6 @@ mysql:
     - source: salt://db/files/percona/my.cnf.jinja
     - template: jinja
 
-create_my_cnf:
-  cmd.run:
-    - name: |
-        temp_root_pass=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1)
-        cat << EOF > /root/.my.cnf
-        [client]
-        user='{{ mysql_root_user }}'
-        password='$temp_root_pass'
-        EOF
-    - require:
-      - service: mysql
-
 change_root_password:
   cmd.run:
     - name: |
