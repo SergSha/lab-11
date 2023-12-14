@@ -25,8 +25,8 @@ locals {
     */
   }
 
-  #subnet_cidrs  = ["10.10.50.0/24"]
-  #subnet_name   = "my_vpc_subnet"
+  #subnet_cidrs = ["10.10.50.0/24"]
+  #subnet_name  = "my_vpc_subnet"
   master_count = "1"
   db_count     = "1"
   iscsi_count  = "0"
@@ -55,12 +55,12 @@ resource "yandex_resourcemanager_folder" "folders" {
 
 resource "yandex_vpc_network" "vpc" {
   #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
-  name      = local.vpc_name
+  name = local.vpc_name
 }
 
 data "yandex_vpc_network" "vpc" {
   #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
-  name      = yandex_vpc_network.vpc.name
+  name = yandex_vpc_network.vpc.name
 }
 
 #resource "yandex_vpc_subnet" "subnet" {
@@ -73,7 +73,7 @@ data "yandex_vpc_network" "vpc" {
 #}
 
 resource "yandex_vpc_subnet" "subnets" {
-  for_each = local.subnets
+  for_each       = local.subnets
   name           = each.key
   #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
   v4_cidr_blocks = each.value["v4_cidr_blocks"]
@@ -85,12 +85,12 @@ resource "yandex_vpc_subnet" "subnets" {
 #data "yandex_vpc_subnet" "subnets" {
 #  for_each   = yandex_vpc_subnet.subnets
 #  name       = each.value["name"]
-#  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+#  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
 #  depends_on = [yandex_vpc_subnet.subnets]
 #}
 
 resource "yandex_vpc_gateway" "nat_gateway" {
-  name = "test-gateway"
+  name      = "test-gateway"
   #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   shared_egress_gateway {}
 }
@@ -107,12 +107,11 @@ resource "yandex_vpc_route_table" "rt" {
 }
 
 module "masters" {
-  source         = "./modules/instances"
-  count          = local.master_count
-  vm_name        = "master-${format("%02d", count.index + 1)}"
-  core_fraction  = 50
-  vpc_name       = local.vpc_name
-  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+  source    = "./modules/instances"
+  count     = local.master_count
+  vm_name   = "master-${format("%02d", count.index + 1)}"
+  vpc_name  = local.vpc_name
+  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
@@ -126,7 +125,7 @@ module "masters" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: master-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
+  user-data      = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- 127.0.0.1\nid: master-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-master.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
 }
@@ -139,16 +138,16 @@ data "yandex_compute_instance" "masters" {
 }
 
 module "dbs" {
-  source         = "./modules/instances"
-  count          = local.db_count
-  vm_name        = "db-${format("%02d", count.index + 1)}"
-  vpc_name       = local.vpc_name
-  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+  source    = "./modules/instances"
+  count     = local.db_count
+  vm_name   = "db-${format("%02d", count.index + 1)}"
+  vpc_name  = local.vpc_name
+  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
       subnet_id = subnet.id
-      nat       = true
+      #nat       = true
     }
     if subnet.name == "lab-subnet"
   }
@@ -157,10 +156,10 @@ module "dbs" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: db-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+  user-data      = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: db-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
-  depends_on = [data.yandex_compute_instance.masters]
+  depends_on     = [data.yandex_compute_instance.masters]
 }
 
 data "yandex_compute_instance" "dbs" {
@@ -209,16 +208,16 @@ data "yandex_compute_instance" "iscsi-servers" {
 }
 */
 module "bes" {
-  source         = "./modules/instances"
-  count          = local.be_count
-  vm_name        = "be-${format("%02d", count.index + 1)}"
-  vpc_name       = local.vpc_name
-  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+  source    = "./modules/instances"
+  count     = local.be_count
+  vm_name   = "be-${format("%02d", count.index + 1)}"
+  vpc_name  = local.vpc_name
+  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
       subnet_id = subnet.id
-      nat       = true
+      #nat       = true
     }
     if subnet.name == "lab-subnet" #|| subnet.name == "be-subnet"
   }
@@ -227,10 +226,10 @@ module "bes" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: be-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+  user-data      = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: be-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
-  #depends_on = [yandex_compute_disk.disks]
-  depends_on = [data.yandex_compute_instance.masters]
+  #depends_on     = [yandex_compute_disk.disks]
+  depends_on     = [data.yandex_compute_instance.masters]
 
 }
 
@@ -242,12 +241,11 @@ data "yandex_compute_instance" "bes" {
 }
 
 module "lbs" {
-  source         = "./modules/instances"
-  count          = local.lb_count
-  vm_name        = "lb-${format("%02d", count.index + 1)}"
-  core_fraction  = 50
-  vpc_name       = local.vpc_name
-  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+  source    = "./modules/instances"
+  count     = local.lb_count
+  vm_name   = "lb-${format("%02d", count.index + 1)}"
+  vpc_name  = local.vpc_name
+  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
@@ -261,10 +259,10 @@ module "lbs" {
   #subnet_id      = yandex_vpc_subnet.subnet.id
   vm_user        = local.vm_user
   ssh_public_key = local.ssh_public_key
-  user-data = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: lb-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
+  user-data      = "#cloud-config\nwrite_files:\n- content: ${base64encode("master:\n- ${data.yandex_compute_instance.masters[0].network_interface[0].ip_address}\nid: lb-${format("%02d", count.index + 1)}")}\n  encoding: b64\n  path: /etc/salt/minion.d/minion.conf\n${file("cloud-init-salt-minion.yml")}"
   secondary_disk = {}
   #depends_on     = [yandex_compute_disk.disks]
-  depends_on     = [data.yandex_compute_instance.masters]
+  depends_on = [data.yandex_compute_instance.masters]
 }
 
 data "yandex_compute_instance" "lbs" {
@@ -277,12 +275,12 @@ data "yandex_compute_instance" "lbs" {
 resource "local_file" "inventory_file" {
   content = templatefile("${path.module}/templates/inventory.tpl",
     {
-      masters    = data.yandex_compute_instance.masters
-      dbs      = data.yandex_compute_instance.dbs
-      #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
-      bes = data.yandex_compute_instance.bes
-      lbs   = data.yandex_compute_instance.lbs
-      remote_user     = local.vm_user
+      masters       = data.yandex_compute_instance.masters
+      dbs           = data.yandex_compute_instance.dbs
+      #iscsi-servers = data.yandex_compute_instance.iscsi-servers
+      bes           = data.yandex_compute_instance.bes
+      lbs           = data.yandex_compute_instance.lbs
+      remote_user   = local.vm_user
     }
   )
   filename = "${path.module}/inventory.ini"
@@ -291,12 +289,12 @@ resource "local_file" "inventory_file" {
 resource "local_file" "roster_file" {
   content = templatefile("${path.module}/templates/roster.tpl",
     {
-      masters    = data.yandex_compute_instance.masters
-      dbs      = data.yandex_compute_instance.dbs
-      #iscsi-servers   = data.yandex_compute_instance.iscsi-servers
-      bes = data.yandex_compute_instance.bes
-      lbs   = data.yandex_compute_instance.lbs
-      remote_user     = local.vm_user
+      masters       = data.yandex_compute_instance.masters
+      dbs           = data.yandex_compute_instance.dbs
+      #iscsi-servers = data.yandex_compute_instance.iscsi-servers
+      bes           = data.yandex_compute_instance.bes
+      lbs           = data.yandex_compute_instance.lbs
+      remote_user   = local.vm_user
     }
   )
   filename = "${path.module}/srv/salt/roster"

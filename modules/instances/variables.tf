@@ -56,7 +56,7 @@ variable "memory" {
 
 variable "core_fraction" {
   description = "Core fraction, default 100%"
-  default     = 100
+  default     = 50
   type        = number
 }
 
