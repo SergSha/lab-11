@@ -5,16 +5,11 @@ php-packages:
       - php-fpm
       - php-mysqlnd
       - php-bcmath
-      #- php-ctype
-      #- php-json
       - php-mbstring
       - php-pdo
-      #- php-tokenizer
       - php-xml
-      #- php-curl
-
-php-fpm:
   service.running:
+    - name: php-fpm
     - enable: true
     - require:
       - pkg: php-packages

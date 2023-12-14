@@ -8,9 +8,8 @@ nginx:
     - enable: true
     - require:
       - pkg: nginx
-
-/etc/nginx/nginx.conf:
   file.managed:
+    - name: /etc/nginx/nginx.conf
     - source: salt://be/files/nginx/nginx.conf.jinja
     - template: jinja
 ...

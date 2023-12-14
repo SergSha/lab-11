@@ -27,11 +27,11 @@ locals {
 
   #subnet_cidrs  = ["10.10.50.0/24"]
   #subnet_name   = "my_vpc_subnet"
-  master_count     = "1"
-  db_count       = "1"
-  iscsi_count    = "0"
-  be_count  = "1"
-  lb_count    = "0"
+  master_count = "1"
+  db_count     = "1"
+  iscsi_count  = "0"
+  be_count     = "1"
+  lb_count     = "1"
   /*
   disk = {
     "web" = {
