@@ -30,7 +30,7 @@ locals {
   master_count     = "1"
   db_count       = "1"
   iscsi_count    = "0"
-  be_count  = "0"
+  be_count  = "1"
   lb_count    = "0"
   /*
   disk = {
