@@ -40,13 +40,13 @@ locals {
   }
   */
 }
-/*
+
 resource "yandex_resourcemanager_folder" "folders" {
   for_each = local.folders
   name     = each.key
   cloud_id = var.cloud_id
 }
-*/
+
 #data "yandex_resourcemanager_folder" "folders" {
 #  for_each   = yandex_resourcemanager_folder.folders
 #  name       = each.value["name"]
@@ -54,18 +54,18 @@ resource "yandex_resourcemanager_folder" "folders" {
 #}
 
 resource "yandex_vpc_network" "vpc" {
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   name = local.vpc_name
 }
 
 data "yandex_vpc_network" "vpc" {
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   name = yandex_vpc_network.vpc.name
 }
 
 #resource "yandex_vpc_subnet" "subnet" {
 #  count          = length(local.subnet_cidrs)
-#  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+#  folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
 #  v4_cidr_blocks = local.subnet_cidrs
 #  zone           = var.zone
 #  name           = "${local.subnet_name}${format("%1d", count.index + 1)}"
@@ -75,7 +75,7 @@ data "yandex_vpc_network" "vpc" {
 resource "yandex_vpc_subnet" "subnets" {
   for_each       = local.subnets
   name           = each.key
-  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
   v4_cidr_blocks = each.value["v4_cidr_blocks"]
   zone           = var.zone
   network_id     = data.yandex_vpc_network.vpc.id
@@ -85,19 +85,19 @@ resource "yandex_vpc_subnet" "subnets" {
 #data "yandex_vpc_subnet" "subnets" {
 #  for_each   = yandex_vpc_subnet.subnets
 #  name       = each.value["name"]
-#  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+#  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
 #  depends_on = [yandex_vpc_subnet.subnets]
 #}
 
 resource "yandex_vpc_gateway" "nat_gateway" {
   name      = "test-gateway"
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   shared_egress_gateway {}
 }
 
 resource "yandex_vpc_route_table" "rt" {
   name       = "test-route-table"
-  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_id = yandex_vpc_network.vpc.id
 
   static_route {
@@ -111,7 +111,7 @@ module "masters" {
   count     = local.master_count
   vm_name   = "master-${format("%02d", count.index + 1)}"
   vpc_name  = local.vpc_name
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
@@ -133,7 +133,7 @@ module "masters" {
 data "yandex_compute_instance" "masters" {
   count      = length(module.masters)
   name       = module.masters[count.index].vm_name
-  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.masters]
 }
 
@@ -142,7 +142,7 @@ module "dbs" {
   count     = local.db_count
   vm_name   = "db-${format("%02d", count.index + 1)}"
   vpc_name  = local.vpc_name
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
@@ -165,7 +165,7 @@ module "dbs" {
 data "yandex_compute_instance" "dbs" {
   count      = length(module.dbs)
   name       = module.dbs[count.index].vm_name
-  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.dbs]
 }
 /*
@@ -174,7 +174,7 @@ module "iscsi-servers" {
   count          = local.iscsi_count
   vm_name        = "iscsi-${format("%02d", count.index + 1)}"
   vpc_name       = local.vpc_name
-  #folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id      = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
@@ -203,7 +203,7 @@ module "iscsi-servers" {
 data "yandex_compute_instance" "iscsi-servers" {
   count      = length(module.iscsi-servers)
   name       = module.iscsi-servers[count.index].vm_name
-  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.iscsi-servers]
 }
 */
@@ -212,7 +212,7 @@ module "bes" {
   count     = local.be_count
   vm_name   = "be-${format("%02d", count.index + 1)}"
   vpc_name  = local.vpc_name
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
@@ -236,7 +236,7 @@ module "bes" {
 data "yandex_compute_instance" "bes" {
   count      = length(module.bes)
   name       = module.bes[count.index].vm_name
-  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.bes]
 }
 
@@ -245,7 +245,7 @@ module "lbs" {
   count     = local.lb_count
   vm_name   = "lb-${format("%02d", count.index + 1)}"
   vpc_name  = local.vpc_name
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   network_interface = {
     for subnet in yandex_vpc_subnet.subnets :
     subnet.name => {
@@ -268,7 +268,7 @@ module "lbs" {
 data "yandex_compute_instance" "lbs" {
   count      = length(module.lbs)
   name       = module.lbs[count.index].vm_name
-  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
   depends_on = [module.lbs]
 }
 
@@ -302,7 +302,7 @@ resource "local_file" "roster_file" {
 #resource "yandex_compute_disk" "disks" {
 #  for_each  = local.disks
 #  name      = each.key
-#  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+#  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
 #  size      = each.value["size"]
 #  zone      = var.zone
 #}
@@ -310,7 +310,7 @@ resource "local_file" "roster_file" {
 resource "yandex_compute_disk" "disks" {
   count     = local.iscsi_count
   name      = "web-${format("%02d", count.index + 1)}"
-  #folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
+  folder_id = yandex_resourcemanager_folder.folders["lab-folder"].id
   size      = "1"
   zone      = var.zone
 }
@@ -318,7 +318,7 @@ resource "yandex_compute_disk" "disks" {
 #data "yandex_compute_disk" "disks" {
 #  for_each   = yandex_compute_disk.disks
 #  name       = each.value["name"]
-#  #folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
+#  folder_id  = yandex_resourcemanager_folder.folders["lab-folder"].id
 #  depends_on = [yandex_compute_disk.disks]
 #}
 /*

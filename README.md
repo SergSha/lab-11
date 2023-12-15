@@ -125,7 +125,7 @@ masters-info = {
 
 <img src="pics/screen-001.png" alt="screen-001.png" />
 
-На всех серверах установлены ОС Almalinux 9.
+На всех серверах установлены ОС Almalinux 9. Приложения salt-master на мастере master-01 и salt-minion на всех миньонах lb-01, be-01, be-02, db-01, а также на мастере master-01 (он также является и миньоном сам себе), автоматически устанавливаются и настраиваются с помощью cloud-init.
 
 Все последующие команды будем запускать от имени root.
 На мастер master-01 с помощью salt-ssh отправим следующую команду, чтобы убедиться, что на мастере подключились необхлдимые ключи от миньонов:
@@ -147,7 +147,7 @@ masters-info = {
 ```
 Как видим, все ключи от миньонов приняты.
 
-Запустим через мастер master-01 команду для применения всех необходимых настроек:
+Отправим с помощью salt-ssh на мастер master-01 команду для применения всех необходимых настроек на миньонах, а мастер, в свою очередь, с помощью salt передаст эти команды миньонам:
 ```
 salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "salt '*' state.apply"
 ```
@@ -293,7 +293,49 @@ salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "
         }
 ```
 
-Убедимся, что на всех миньонах не включены сервисы sshd:
+Указанные ip адреса серверов регулируются с помощью jinja, например конфигурационный файл nftables сервера базы данных db-01:
+```
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table ip filter {
+
+        chain MYSQL_INP {
+{%- for addrs in salt['mine.get'](tgt='be-*', fun='network.ip_addrs', tgt_type='glob').values() %}
+                ip saddr {{ addrs[0] }} tcp dport {{ pillar['mysql_port'] }} ct state new counter accept
+{%- endfor %}
+        }
+        chain INPUT {
+                type filter hook input priority filter; policy drop;
+                ct state invalid counter drop
+                iifname "lo" counter accept
+                #tcp dport 22 ct state new counter accept
+                ct state established,related counter accept
+                counter jump MYSQL_INP
+        }
+
+        chain FORWARD {
+                type filter hook forward priority filter; policy drop;
+        }
+
+        chain OUTPUT {
+                type filter hook output priority filter; policy drop;
+                ct state established,related,new counter accept
+        }
+}
+```
+
+Таким же образом динамически изменяются ip адреса в конфигурационных файлах nginx в балансировщике lb-01, в данном случае upstream.conf.jinja:
+```
+upstream @backend {
+{%- for addrs in salt['mine.get'](tgt='be-*', fun='network.ip_addrs', tgt_type='glob').values() %}
+        server {{ addrs[0] }}:80 max_fails=1;
+{%- endfor %}
+}
+```
+
+Убедимся, что на всех миньонах, кроме мастера, не включены сервисы sshd:
 ```
 [root@rocky ~]# salt-ssh -i --priv=/home/user/.ssh/otus --sudo almalinux@84.201.155.81 cmd.run "salt '*' cmd.run 'systemctl is-enabled sshd'"
 84.201.155.81:
